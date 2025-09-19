@@ -62,14 +62,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    padding: 16,
-    marginTop: getStatusBarHeight(),
+    paddingTop: getStatusBarHeight(),
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 16,
     textAlign: 'center',
+    color: '#000',
   },
   card: {
     flexDirection: 'row',

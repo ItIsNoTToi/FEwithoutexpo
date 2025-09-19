@@ -19,9 +19,10 @@ import { getStatusBarHeight } from "react-native-status-bar-height";
 import Tts from 'react-native-tts';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Voice from '@react-native-community/voice';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type Mode = "idle" | "record" | "keyboard";
-type Props = NativeStackScreenProps<LessonStackParamList, 'ReadChat'>;
+type Props = NativeStackScreenProps<LessonStackParamList, 'ListenChat'>;
 
 Tts.setDefaultLanguage('en-US');
 async function speak(text: string) {
@@ -30,8 +31,8 @@ async function speak(text: string) {
   Tts.speak(text); 
 }
 
-export default function ReadChat({ route, navigation }: Props) {
-  const { type } = route.params;
+export default function ListenChat({ route, navigation }: Props) {
+  const { type, resetCache } = route.params;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const flatRef = useRef<FlatList<any>>(null);
   const selectedLesson = useSelector((s: RootState) => s?.lesson.selectedLesson);
@@ -56,6 +57,9 @@ export default function ReadChat({ route, navigation }: Props) {
     getUser().then(d => setUser(d.data)).catch(console.error);
   }, []);
 
+  useEffect(() => {
+    if (resetCache) AsyncStorage.removeItem(`chatlog:${user?._id}:${selectedLesson?._id}`);
+  }, [resetCache, user, selectedLesson]);
   
   useEffect(() => {
     Voice.onSpeechStart = (e: Event) => {
@@ -68,10 +72,7 @@ export default function ReadChat({ route, navigation }: Props) {
       setRecognized("√");
     };
 
-    Voice.onSpeechEnd = (e: Event) => {
-      console.log("onSpeechEnd: ", e);
-      setEnd("√");
-    };
+    Voice.onSpeechEnd = onSpeechEnd;
 
     Voice.onSpeechError = (e: any) => {
       console.log("onSpeechError: ", e);
@@ -80,14 +81,14 @@ export default function ReadChat({ route, navigation }: Props) {
 
     Voice.onSpeechResults = (e: any) => {
       console.log("onSpeechResults: ", e);
-      setResults(e.value ?? []);
+      setResults(e.value);
     };
 
     Voice.onSpeechPartialResults = (e: any) => {
       console.log("onSpeechPartialResults: ", e);
       setPartialResults(e.value ?? []);
     };
-
+    
     Voice.onSpeechVolumeChanged = (e: any) => {
       console.log("onSpeechVolumeChanged: ", e);
       setPitch(e.value ?? 0);
@@ -96,10 +97,47 @@ export default function ReadChat({ route, navigation }: Props) {
     return () => {
       Voice.destroy().then(Voice.removeAllListeners);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const onSpeechEnd = async (e: Event) => {
+    console.log("onSpeechEnd: ", e);
+      if (results.length > 0) {
+        const bestGuess  = results[0];
+        await sendMessage (bestGuess);
+      }
+      setEnd("√");
+  }
+
+  const sendMessage  = async (text: string) =>{
+      if (text) {
+      appendMessage({ from: "user", text: text});
+      setUserInput("");
+      appendMessage({ from: "ai", text: "" });
+
+      let fullText = "";
+      try {
+        fetchAIStream(
+          { userId: user?._id, lessonId: selectedLesson?._id, userSpeechText: text },
+          parsed => {
+            if (parsed.delta) {
+              fullText += parsed.delta;
+              patchLastAIMessage(parsed.delta);
+            }
+          },
+          () => { if (fullText) speak(fullText); setSending(false); },
+          () => { setLessonEnded(true); setSending(false); }
+        );
+      } catch (err) {
+        setSending(false);
+        console.error("fetchAIStream error:", err);
+      }
+      setUserInput("");
+    }
+  }
 
   const startRecognizing = async () => {
+    setResults([]); 
     try {
       await Voice.start("en-US");
     } catch (e) {
@@ -111,31 +149,6 @@ export default function ReadChat({ route, navigation }: Props) {
     try {
       await Voice.stop();
       setMode("idle");
-      if (userInput.trim()) {
-        const answer = userInput.trim()
-        appendMessage({ from: "user", text: answer });
-        setUserInput("");
-        appendMessage({ from: "ai", text: "" });
-
-        let fullText = "";
-        try {
-          fetchAIStream(
-            { userId: user?._id, lessonId: selectedLesson?._id, userSpeechText: answer },
-            parsed => {
-              if (parsed.delta) {
-                fullText += parsed.delta;
-                patchLastAIMessage(parsed.delta);
-              }
-            },
-            () => { if (fullText) speak(fullText); setSending(false); },
-            () => { setLessonEnded(true); setSending(false); }
-          );
-        } catch (err) {
-          setSending(false);
-          console.error("fetchAIStream error:", err);
-        }
-        setUserInput("");
-      }
     } catch (e) {
       console.error(e);
     }
@@ -180,7 +193,7 @@ export default function ReadChat({ route, navigation }: Props) {
     let mounted = true;
     (async () => {
       try {
-        const d = await startLessonAI(user._id, selectedLesson._id, type);
+        const d = await startLessonAI(user?._id, selectedLesson?._id, type);
         if (mounted) {
           setContent(d.content);
           Alert.alert("Info", d.message);
@@ -340,21 +353,24 @@ export default function ReadChat({ route, navigation }: Props) {
         )}
 
         {/* --- Controls --- */}
-        <Text>Welcome to React Native Voice!</Text>
-        <Text>Press the button and start speaking.</Text>
-        <Text>{`Started: ${started}`}</Text>
-        <Text>{`Recognized: ${recognized}`}</Text>
-        <Text>{`Pitch: ${pitch}`}</Text>
-        <Text>{`Error: ${error}`}</Text>
-        <Text >Results</Text>
-        {results.map((result, index) => (
-          <Text key={`result-${index}`}>{result}</Text>
-        ))}
-        <Text>Partial Results</Text>
-        {partialResults.map((result, index) => (
-          <Text key={`partial-result-${index}`}>{result}</Text>
-        ))}
-        <Text >{`End: ${end}`}</Text>
+        <View >
+          <Text style={{ color: '#000'} as any}>Welcome to React Native Voice!</Text>
+          <Text style={{ color: '#000'} as any}>Press the button and start speaking.</Text>
+          <Text style={{ color: '#000'} as any}>{`Started: ${started}`}</Text>
+          <Text style={{ color: '#000'} as any}>{`Recognized: ${recognized}`}</Text>
+          <Text style={{ color: '#000'} as any}>{`Pitch: ${pitch}`}</Text>
+          <Text style={{ color: '#000'} as any}>{`Error: ${error}`}</Text>
+          <Text style={{ color: '#000'} as any}>Results</Text>
+          {results.map((result, index) => (
+            <Text style={{ color: '#000'} as any} key={`result-${index}`}>{result}</Text>
+          ))}
+          <Text style={{ color: '#000'} as any}>Partial Results</Text>
+          {partialResults.map((result, index) => (
+            <Text style={{ color: '#000'} as any} key={`partial-result-${index}`}>{result}</Text>
+          ))}
+          <Text style={{ color: '#000'} as any}>{`End: ${end}`}</Text>
+        </View>
+        
 
         {/*  */}
         <View style={styles.controls}>
@@ -414,15 +430,15 @@ export default function ReadChat({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: getStatusBarHeight() + 10, backgroundColor: "#f5f5f5" },
+  container: { flex: 1, paddingTop: getStatusBarHeight(), backgroundColor: "#f5f5f5" },
   innerContainer: { flex: 1 },
   centerText: { flex: 1, textAlign: "center", textAlignVertical: "center", fontSize: 18 },
   contentToggle: { fontSize: 16, color: "#007AFF", paddingHorizontal: 16, marginBottom: 8 },
-  contentBox: { backgroundColor: "#fff", marginHorizontal: 16, borderRadius: 12, padding: 12, maxHeight: 150, marginBottom: 12 },
+  contentBox: { backgroundColor: "#fff", marginHorizontal: 16, borderRadius: 12, padding: 12, maxHeight: 150, marginBottom: 12, color: '#000' },
   contentText: { fontSize: 16, color: "#333" },
   chatList: { paddingHorizontal: 16, paddingBottom: 8 },
   messageBubble: { padding: 12, borderRadius: 16, marginBottom: 8, maxWidth: "75%" },
-  messageText: { fontSize: 16, color: "#000" },
+  messageText: { fontSize: 16, color: "#000000ff" },
   inputContainer: { flexDirection: "row", alignItems: "center", marginHorizontal: 16, marginVertical: 8, backgroundColor: "#fff", borderRadius: 12, borderWidth: 1, borderColor: "#ccc", paddingHorizontal: 12, paddingVertical: Platform.OS === "ios" ? 10 : 6 },
   input: { flex: 1, fontSize: 16, color: "#333" },
   sendButton: { backgroundColor: "#007AFF", padding: 10, borderRadius: 24, marginLeft: 8 },
@@ -438,7 +454,7 @@ const styles = StyleSheet.create({
   },
   recording: { backgroundColor: '#f44336' },
   text: { color: 'white', fontWeight: 'bold' },
-   title: { fontSize: 20, fontWeight: "bold", marginBottom: 8, textAlign: "center" },
+   title: { fontSize: 20, fontWeight: "bold", marginBottom: 8, textAlign: "center", color: '#000' },
   bubble: { padding: 12, borderRadius: 16, marginBottom: 8, maxWidth: "80%" },
   userBubble: { backgroundColor: "#007AFF", alignSelf: "flex-end" },
   aiBubble: { backgroundColor: "#E5E5EA", alignSelf: "flex-start" },
@@ -448,6 +464,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center" },
   dot: { width: 16, height: 16, borderRadius: 8, backgroundColor: "red", marginRight: 12 },
   inputRow: { flexDirection: "row", alignItems: "center", flex: 1 },
-  textInput: { flex: 1, borderWidth: 1, borderColor: "#ccc", borderRadius: 20, paddingHorizontal: 12 },
+  textInput: { flex: 1, borderWidth: 1, borderColor: "#ccc", borderRadius: 20, paddingHorizontal: 12, color: '#000' },
   finishBtn: { padding: 12, backgroundColor: "red", borderRadius: 8, margin: 16 },
 });

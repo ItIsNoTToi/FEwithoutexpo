@@ -19,6 +19,7 @@ import { getStatusBarHeight } from "react-native-status-bar-height";
 import Tts from 'react-native-tts';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Voice from '@react-native-community/voice';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type Mode = "idle" | "record" | "keyboard";
 type Props = NativeStackScreenProps<LessonStackParamList, 'ListenChat'>;
@@ -31,7 +32,7 @@ async function speak(text: string) {
 }
 
 export default function ListenChat({ route, navigation }: Props) {
-  const { type } = route.params;
+  const { type, resetCache } = route.params;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const flatRef = useRef<FlatList<any>>(null);
   const selectedLesson = useSelector((s: RootState) => s?.lesson.selectedLesson);
@@ -56,6 +57,9 @@ export default function ListenChat({ route, navigation }: Props) {
     getUser().then(d => setUser(d.data)).catch(console.error);
   }, []);
 
+  useEffect(() => {
+    if (resetCache) AsyncStorage.removeItem(`chatlog:${user?._id}:${selectedLesson?._id}`);
+  }, [resetCache, user, selectedLesson]);
   
   useEffect(() => {
     Voice.onSpeechStart = (e: Event) => {

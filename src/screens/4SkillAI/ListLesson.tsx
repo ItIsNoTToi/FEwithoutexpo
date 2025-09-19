@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { getLesson } from "../../services/api/lesson.services";
 import Lesson from "../../models/lesson";
@@ -66,7 +66,7 @@ export default function ListLesson({ navigation }: Props) {
               // Cập nhật lại progress local
               fetchProgressApi(user?._id).then((data) => setProgresses(data.data));
               // Chuyển vào bài học
-              goToLesson(lesson, lesson.type);
+              goToLesson(lesson, lesson.type, true);
             } catch (err) {
               console.error(err);
             }
@@ -76,12 +76,12 @@ export default function ListLesson({ navigation }: Props) {
     );
   };
 
-  const goToLesson = (lesson: Lesson, type: string) => {
+  const goToLesson = (lesson: Lesson, type: string, resetCache: boolean) => {
     dispatch(setLesson(lesson));
     navigation.navigate(
       type === "listening" ? "ListenChat" :
                             "ReadChat",
-      { type }
+      { type, resetCache: resetCache }
     );
   };
 
@@ -97,7 +97,7 @@ export default function ListLesson({ navigation }: Props) {
         style={[styles.card, isLessonDisabled(item._id) && { opacity: 0.5 }] as any}
         disabled={isLessonDisabled(item._id)} 
         activeOpacity={0.7}
-        onPress={() => goToLesson(item, item.type)}
+        onPress={() => goToLesson(item, item.type, false)}
       >
         <View style={styles.cardHeader}>
           <Text style={styles.icon}>📘</Text>
@@ -123,7 +123,7 @@ export default function ListLesson({ navigation }: Props) {
           <View style={styles.btnRow}>
             <TouchableOpacity
               style={[styles.btn, { backgroundColor: "#3b82f6" }] as any}
-              onPress={() => goToLesson(item, item.type)} // Review
+              onPress={() => goToLesson(item, item.type, false)} // Review
             >
               <Text style={styles.btnText}>👀 Review</Text>
             </TouchableOpacity>
@@ -138,7 +138,7 @@ export default function ListLesson({ navigation }: Props) {
           <View style={styles.btnRow}>
             <TouchableOpacity
               style={[styles.btn, { backgroundColor: "#10b981" }] as any}
-              onPress={() => goToLesson(item, item.type)}
+              onPress={() => goToLesson(item, item.type, false)}
             >
               <Text style={styles.btnText}>▶️ Start</Text>
             </TouchableOpacity>
@@ -174,8 +174,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f8fafc",
-    paddingHorizontal: 20,
-    paddingTop: getStatusBarHeight() + 20,
+    paddingTop: getStatusBarHeight(),
+    padding: 10,
+    paddingBottom: 40,
   },
   header: {
     fontSize: 26,

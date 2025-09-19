@@ -19,6 +19,7 @@ import Lesson from '../models/lesson';
 import { QuizTabs } from './QuizNavigator';
 import { TournamentTabs } from './TournamentNavigator';
 import { LessonStackNavigator } from './LessonNavigator';
+import { Write } from '../screens/4SkillAI/Write';
 
 export type QuizStackParamList = {
   QuizTopic: undefined;
@@ -38,8 +39,8 @@ export type TournamentStackParamList = {
 
 export type LessonStackParamList = {
   ListLesson: undefined;
-  ListenChat: { type: string }
-  ReadChat: { type: string }
+  ListenChat: { type: string, resetCache: boolean }
+  ReadChat: { type: string, resetCache: boolean }
 }
 
 const Tab = createBottomTabNavigator();
@@ -126,6 +127,11 @@ export default function AppNavigation() {
         name="QuizTest"
         component={QuizTabs}
         options={{ title: 'Quiz', headerShown: false }}
+      />
+      <Stack.Screen
+        name="Write"
+        component={Write}
+        options={{ title: 'Write', headerShown: false }}
       />
       <Stack.Screen
         name="Vocabulary"

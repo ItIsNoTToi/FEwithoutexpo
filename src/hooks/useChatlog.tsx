@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fetchChatlog } from "../services/api/chatlog.services";
 
-type ChatMessage = { from: "user" | "ai"; text: string };
+export type ChatMessage = { from: "user" | "ai"; text: string };
 
 const storageKey = (userId: string, lessonId: string) =>
   `chatlog:${userId}:${lessonId}`;
@@ -45,6 +45,7 @@ export function useChatlog(userId?: string, lessonId?: string) {
       // 2. Gọi API
       const res = await fetchChatlog(userId, lessonId);
       const raw = res?.data?.messages ?? [];
+      // eslint-disable-next-line @typescript-eslint/no-shadow
       const messages: ChatMessage[] = raw.map((m: any) => ({
         from: m.role === "user" ? "user" : "ai",
         text: m.content ?? "",

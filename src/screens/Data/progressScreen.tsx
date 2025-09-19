@@ -142,6 +142,7 @@ const styles = StyleSheet.create({
   detailText: {
     fontSize: 14,
     marginBottom: 2,
+    color: '#000',
   },
   bold: {
     fontWeight: "600",

@@ -5,7 +5,7 @@ import { getStatusBarHeight } from 'react-native-status-bar-height';
 
 export default function HomeScreen({ navigation }: any) {
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 } as any}>
       <View style={styles.header}>
         <Text style={styles.greeting}>Hello 👋</Text>
         <Text style={styles.subGreeting}>Welcome back to LearnE</Text>
@@ -55,10 +55,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f6ff',
     flex: 1,
     paddingHorizontal: 20,
-    marginTop: getStatusBarHeight(),
+    paddingTop: getStatusBarHeight(),
   },
   header: {
-    marginTop: 40,
+    marginTop: 20,
   },
   greeting: {
     fontSize: 24,

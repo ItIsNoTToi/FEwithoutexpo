@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import axiosInstance from "../../config/axiosconfig";
 import Config from "react-native-config";
 import EventSource from "react-native-sse";
@@ -91,27 +92,37 @@ export const PauseLessonAI = async (userId: any, lessonId: any) => {
 }
 
 export const retakeLessonApi = async (userId: any, lessonId: any) => {
- try {
-        const response = await axiosInstance.post('/api/ai/pause',{
-            userId: userId, 
-            lessonId: lessonId 
-        })   
-        return response.data;
-    } catch (error: any) {
-        throw Error (error.message);
-    }
+  try {
+    const response = await axiosInstance.post('/api/ai/pause', {
+      userId: userId, 
+      lessonId: lessonId,
+    });
+
+    await AsyncStorage.removeItem(`chatlog:${userId}:${lessonId}`);
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.message);
+  }
 }
 
-export const postRecord = async (data: FormData) => {
+export const getRandomTitle = async () => {
   try {
-    const response = await axiosInstance.post('/api/ai/record/upload', data, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+    const response = await axiosInstance.get('/api/randomTitle');
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.message);
+  }
+}
+
+export const submitWriting = async (title: string, text: string) => {
+  try {
+    const response = await axiosInstance.post('/api/sendcontent',{
+      title: title,
+      text: text
     });
     return response.data;
   } catch (error: any) {
     throw new Error(error.message);
   }
-};
-
-
+}
 
