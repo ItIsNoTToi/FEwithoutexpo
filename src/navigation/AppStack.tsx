@@ -1,7 +1,7 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faHome, faRobot, faUser, faTrophy } from '@fortawesome/free-solid-svg-icons';
+import { faHome, faRobot, faUser, faTrophy, faPen } from '@fortawesome/free-solid-svg-icons';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import { getFocusedRouteNameFromRoute } from "@react-navigation/native";
 
@@ -10,7 +10,6 @@ import HomeScreen from '../screens/index';
 import ProfileScreen from '../screens/ProfileScreen';
 import RankingScreen from '../screens/Extends/RankingScreen';
 import VocabularyPage from '../screens/Extends/Vocabulary';
-import Listening from '../screens/4SkillAI/Listening';
 
 // model
 import Lesson from '../models/lesson';
@@ -20,6 +19,10 @@ import { QuizTabs } from './QuizNavigator';
 import { TournamentTabs } from './TournamentNavigator';
 import { LessonStackNavigator } from './LessonNavigator';
 import { Write } from '../screens/4SkillAI/Write';
+import { Read } from '../screens/4SkillAI/Read';
+import { Speak } from '../screens/4SkillAI/Speak';
+import { Listen } from '../screens/4SkillAI/Listen';
+import { fixSentence } from '../screens/fixSentence';
 
 export type QuizStackParamList = {
   QuizTopic: undefined;
@@ -48,7 +51,11 @@ const Stack = createNativeStackNavigator();
 
 function MainTabs() {
   return (
-    <Tab.Navigator screenOptions={{ headerShown: false }}>
+    <Tab.Navigator  screenOptions={{
+    headerShown: false,
+    tabBarActiveTintColor: "#020c16ff",   // màu khi tab active
+    tabBarInactiveTintColor: "#06a144ff",   // màu khi tab không active
+  }}>
       <Tab.Screen
         name="Home"
         component={HomeScreen}
@@ -68,9 +75,7 @@ function MainTabs() {
           // Nếu không phải ở màn ListLesson thì ẩn tab bar
           if (
             routeName === "ListenChat" ||
-            routeName === "ReadChat" ||
-            routeName === "SpeakChat" ||
-            routeName === "WriteChat"
+            routeName === "ReadChat"
           ) {
             return {
               title: "Chat with AI",
@@ -87,6 +92,16 @@ function MainTabs() {
               <FontAwesomeIcon icon={faRobot as IconProp} color={color} size={size} />
             ),
           };
+        }}
+      />
+      <Tab.Screen
+        name="FixSentence"
+        component={fixSentence}
+        options={{
+          title: 'Fix Sentence',
+          tabBarIcon: ({ color, size }) => (
+            <FontAwesomeIcon icon={faPen as IconProp} color={color} size={size as number} />
+          ),
         }}
       />
       <Tab.Screen
@@ -134,14 +149,24 @@ export default function AppNavigation() {
         options={{ title: 'Write', headerShown: false }}
       />
       <Stack.Screen
+        name="Read"
+        component={Read}
+        options={{ title: 'Read', headerShown: false }}
+      />
+      <Stack.Screen
         name="Vocabulary"
         component={VocabularyPage}
         options={{ title: 'Vocabulary', headerShown: false }}
       />
       <Stack.Screen
-        name="AIListening"
-        component={Listening}
-        options={{ title: 'Listening', headerShown: false }}
+        name="Listen"
+        component={Listen}
+        options={{ title: 'Listen', headerShown: false }}
+      />
+      <Stack.Screen
+        name="Speak"
+        component={Speak}
+        options={{ title: 'Speak', headerShown: false }}
       />
       <Stack.Screen
         name="Ranking"

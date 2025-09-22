@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // screens/LearningWithAI.tsx
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -27,7 +28,7 @@ type Props = NativeStackScreenProps<LessonStackParamList, 'ListenChat'>;
 Tts.setDefaultLanguage('en-US');
 async function speak(text: string) {
   Tts.stop();
-  Tts.setDefaultRate(0.5);
+  Tts.setDefaultRate(0.25);
   Tts.speak(text); 
 }
 
@@ -352,7 +353,7 @@ export default function ListenChat({ route, navigation }: Props) {
           </TouchableOpacity>
         )}
 
-        {/* --- Controls --- */}
+        {/* --- Controls ---
         <View >
           <Text style={{ color: '#000'} as any}>Welcome to React Native Voice!</Text>
           <Text style={{ color: '#000'} as any}>Press the button and start speaking.</Text>
@@ -369,8 +370,7 @@ export default function ListenChat({ route, navigation }: Props) {
             <Text style={{ color: '#000'} as any} key={`partial-result-${index}`}>{result}</Text>
           ))}
           <Text style={{ color: '#000'} as any}>{`End: ${end}`}</Text>
-        </View>
-        
+        </View> */}
 
         {/*  */}
         <View style={styles.controls}>
@@ -411,6 +411,7 @@ export default function ListenChat({ route, navigation }: Props) {
                 value={userInput}
                 onChangeText={setUserInput}
                 placeholder="Type a message..."
+                onSubmitEditing={handleSend}
               />
               <TouchableOpacity style={[styles.circleBtn, { backgroundColor: "green" }] as any}
                 onPress={handleSend}>
@@ -430,40 +431,88 @@ export default function ListenChat({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: getStatusBarHeight(), backgroundColor: "#f5f5f5" },
-  innerContainer: { flex: 1 },
-  centerText: { flex: 1, textAlign: "center", textAlignVertical: "center", fontSize: 18 },
-  contentToggle: { fontSize: 16, color: "#007AFF", paddingHorizontal: 16, marginBottom: 8 },
-  contentBox: { backgroundColor: "#fff", marginHorizontal: 16, borderRadius: 12, padding: 12, maxHeight: 150, marginBottom: 12, color: '#000' },
-  contentText: { fontSize: 16, color: "#333" },
-  chatList: { paddingHorizontal: 16, paddingBottom: 8 },
-  messageBubble: { padding: 12, borderRadius: 16, marginBottom: 8, maxWidth: "75%" },
-  messageText: { fontSize: 16, color: "#000000ff" },
-  inputContainer: { flexDirection: "row", alignItems: "center", marginHorizontal: 16, marginVertical: 8, backgroundColor: "#fff", borderRadius: 12, borderWidth: 1, borderColor: "#ccc", paddingHorizontal: 12, paddingVertical: Platform.OS === "ios" ? 10 : 6 },
-  input: { flex: 1, fontSize: 16, color: "#333" },
-  sendButton: { backgroundColor: "#007AFF", padding: 10, borderRadius: 24, marginLeft: 8 },
-  finishButton: { paddingVertical: 12, backgroundColor: "red", borderRadius: 12, marginHorizontal: 16, marginBottom: 16, alignItems: "center" },
-  finishButtonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
-  button: {
-    backgroundColor: '#4CAF50',
-    padding: 20,
-    borderRadius: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
-    margin: 16,
+  container: { 
+    flex: 1, 
+    paddingTop: getStatusBarHeight(), 
+    backgroundColor: '#0b0c2a', // galaxy dark background
   },
-  recording: { backgroundColor: '#f44336' },
-  text: { color: 'white', fontWeight: 'bold' },
-   title: { fontSize: 20, fontWeight: "bold", marginBottom: 8, textAlign: "center", color: '#000' },
-  bubble: { padding: 12, borderRadius: 16, marginBottom: 8, maxWidth: "80%" },
-  userBubble: { backgroundColor: "#007AFF", alignSelf: "flex-end" },
-  aiBubble: { backgroundColor: "#E5E5EA", alignSelf: "flex-start" },
-  message: { fontSize: 16, color: "#000" },
+  innerContainer: { flex: 1 },
+  centerText: { flex: 1, textAlign: "center", textAlignVertical: "center", fontSize: 18, color: "#fff" },
+
+  title: { 
+    fontSize: 22, 
+    fontWeight: "bold", 
+    marginBottom: 8, 
+    textAlign: "center", 
+    color: "#fff",
+    textShadowColor: "#7F00FF",
+    textShadowRadius: 12,
+  },
+
+  contentToggle: { fontSize: 16, color: "#4FACFE", paddingHorizontal: 16, marginBottom: 8 },
+  contentBox: { 
+    backgroundColor: "rgba(255,255,255,0.05)", 
+    marginHorizontal: 16, 
+    borderRadius: 12, 
+    padding: 12, 
+    maxHeight: 150, 
+    marginBottom: 12 
+  },
+  contentText: { fontSize: 16, color: "#fff" },
+
+  chatList: { paddingHorizontal: 16, paddingBottom: 8 },
+  messageBubble: { padding: 12, borderRadius: 18, marginBottom: 10, maxWidth: "75%" },
+
+  // Bubble user / AI
+  userBubble: { 
+    alignSelf: "flex-end", 
+    backgroundColor: "#4FACFE", 
+    shadowColor: "#00F2FE", 
+    shadowOpacity: 0.6, 
+    shadowRadius: 10 
+  },
+  aiBubble: { 
+    alignSelf: "flex-start", 
+    backgroundColor: "#7F00FF", 
+    shadowColor: "#E100FF", 
+    shadowOpacity: 0.6, 
+    shadowRadius: 10 
+  },
+  messageText: { fontSize: 16, color: "#fff" },
+
+  finishButton: { 
+    paddingVertical: 12, 
+    backgroundColor: "#E100FF", 
+    borderRadius: 12, 
+    marginHorizontal: 16, 
+    marginBottom: 16, 
+    alignItems: "center", 
+    shadowColor: "#FF00FF",
+    shadowOpacity: 0.8,
+    shadowRadius: 12,
+  },
+  finishButtonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+
   controls: { flexDirection: "row", justifyContent: "center", alignItems: "center", padding: 12 },
-  circleBtn: { padding: 12, borderRadius: 50, marginHorizontal: 6 },
+  circleBtn: { 
+    padding: 14, 
+    borderRadius: 50, 
+    marginHorizontal: 6, 
+    shadowColor: "#00F2FE", 
+    shadowOpacity: 0.8, 
+    shadowRadius: 10 
+  },
   row: { flexDirection: "row", alignItems: "center" },
-  dot: { width: 16, height: 16, borderRadius: 8, backgroundColor: "red", marginRight: 12 },
+  dot: { width: 16, height: 16, borderRadius: 8, backgroundColor: "#FF0044", marginRight: 12 },
+
   inputRow: { flexDirection: "row", alignItems: "center", flex: 1 },
-  textInput: { flex: 1, borderWidth: 1, borderColor: "#ccc", borderRadius: 20, paddingHorizontal: 12, color: '#000' },
-  finishBtn: { padding: 12, backgroundColor: "red", borderRadius: 8, margin: 16 },
+  textInput: { 
+    flex: 1, 
+    borderWidth: 1, 
+    borderColor: "#4FACFE", 
+    borderRadius: 20, 
+    paddingHorizontal: 12, 
+    color: '#fff',
+    backgroundColor: "rgba(255,255,255,0.05)"
+  },
 });

@@ -1,8 +1,8 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { LessonStackParamList } from "./AppStack";
-import ListLesson from '../screens/4SkillAI/ListLesson';
-import ListenChat from '../screens/4SkillAI/ListenChat';
-import ReadChat from '../screens/4SkillAI/ReadChat';
+import ListLesson from '../screens/mainModule/ListLesson';
+import ListenChat from '../screens/mainModule/ListenChat';
+import ReadChat from '../screens/mainModule/ReadChat';
 
 const LessonStack = createNativeStackNavigator<LessonStackParamList>();
 

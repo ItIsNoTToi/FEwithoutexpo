@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react'; 
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaViewBase } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Question } from '../../models/question';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { QuizStackParamList } from '../../navigation/AppStack';
 import { getQuestionByQuizId, SaveHistoryQuiz } from '../../services/api/quiz.services';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Props = NativeStackScreenProps<QuizStackParamList, 'QuizTest'>;
 
@@ -70,7 +71,7 @@ export default function QuizTest({ route, navigation }: Props) {
   };
 
   return (
-    <SafeAreaViewBase style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Thanh tiến độ */}
       <View style={styles.progressContainer}>
         <View style={[styles.progressBar, { width: `${((currentIndex+1)/questions.length)*100}%` }]} />
@@ -124,7 +125,7 @@ export default function QuizTest({ route, navigation }: Props) {
           </TouchableOpacity>
         </View>
       )}
-    </SafeAreaViewBase>
+    </SafeAreaView>
   );
 }
 

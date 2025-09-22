@@ -35,3 +35,20 @@ export const logout_fe = async () => {
   const response = await axios.post('/admin/logout-fe');
   return response.data;
 }
+
+
+export const uploadAvatar = async (userId: any,formData: FormData) => {
+  try {
+    const res = await axios.post(`/api/avatar/${userId}`,{
+      data: formData,
+    });
+    if (res.status === 200) {
+      const data = res.data;
+      if (data.success) {
+        return data;
+      }
+    }
+  } catch (error) {
+    console.error(error);
+  }
+}

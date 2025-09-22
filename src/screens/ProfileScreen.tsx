@@ -1,43 +1,88 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
+import { 
+  View, Text, StyleSheet, Image, TouchableOpacity, 
+  ScrollView, ActivityIndicator, Alert, Modal 
+} from 'react-native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faArrowLeft , faBars } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft , faBars, faCamera } from '@fortawesome/free-solid-svg-icons';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import User from '../models/user';
-import { getUser, logout_fe } from '../services/api/user.services';
+import { getUser, logout_fe, uploadAvatar } from '../services/api/user.services';
 import Progress from './Data/progressScreen';
 import { useAuth } from '../hooks/AuthContext';
-import { getStatusBarHeight } from 'react-native-status-bar-height';
-import { Alert } from 'react-native';
 import { SafeAreaView } from "react-native-safe-area-context";
+import UserDetail from '../models/userdetail';
+import { launchImageLibrary } from "react-native-image-picker";
 
 export default function ProfileScreen({ navigation }: any) {
   const [user, setUser] = useState<User>();
+  const [userDetail, setUserDetail] = useState<UserDetail>();
+  const [loading, setLoading] = useState(true);
+  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
   const { logout } = useAuth();
-  useEffect(( ) => {
-    getUser()
-    .then(data => {
-      // console.log('data:2',data.data);
-      setUser(data.data);
-    })
-    .catch(error => console.error(error));
-  },[]);
 
-  // if(user){
-  //   console.log('user2', user._id);
-  // }
+  useEffect(() => {
+    getUser()
+      .then(data => { 
+        setUser(data.data); 
+        setUserDetail(data.data.UserDetail)
+      })
+      .catch(error => console.error(error))
+      .finally(() => setLoading(false));
+  }, []);
 
   const logoutBtn = async () => {
-    try{
-      await logout_fe()
-      .then(data =>{
-        data.success ? logout(): Alert.alert("Can't logout");
-      })
-    } catch (e){
+    try {
+      const data = await logout_fe();
+      if (data.success) {
+        logout();
+      } else {
+        Alert.alert("Can't logout");
+      }
+    } catch (e) {
       console.log(e);
-    } finally{
-      logout();
     }
+  };
+
+  const pickImage = () => {
+    launchImageLibrary(
+      {
+        mediaType: "photo",
+        quality: 1,
+      },
+      (response) => {
+        if (response.didCancel) {
+          console.log("User cancelled image picker");
+        } else if (response.errorCode) {
+          console.log("ImagePicker Error: ", response.errorMessage);
+        } else if (response.assets && response.assets.length > 0) {
+          const uri = response.assets[0].uri;
+          setImageUri(uri || null);
+        }
+      }
+    );
+  };
+
+  const HandleuploadAvatar = async () => {
+    if (!imageUri) return Alert.alert("Chưa chọn ảnh");
+
+    const formData = new FormData();
+    formData.append("avatar", {
+      uri: imageUri,
+      name: "avatar.jpg",
+      type: "image/jpg"
+    } as any);
+
+    uploadAvatar(user?._id, formData)
+    .then(data =>
+    {
+      if(data.success){
+        Alert.alert("Upload thành công");
+        setUserDetail({...userDetail, avatar: data.avatar} as UserDetail);
+        setShowAvatarModal(false);
+      }
+    });
   }
 
   function homepage(): any {
@@ -45,61 +90,98 @@ export default function ProfileScreen({ navigation }: any) {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" } as any}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#000" } as any}>
       <ScrollView style={styles.scrollview} contentContainerStyle={{ paddingBottom: 40 } as any}>
         <View style={styles.container}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={homepage}>
-              <FontAwesomeIcon icon={faArrowLeft  as IconProp} size={24} color="black" />
-            </TouchableOpacity>
-            {/* Avatar + Info */}
-            <Image
-              source={{ uri: user?.avatar || "https://picsum.photos/200/300?random=1" }}
-              style={styles.avatar}
-            />
-            {/* taskbar icon */}
-            <TouchableOpacity onPress={logoutBtn}>
-              <FontAwesomeIcon icon={faBars as IconProp} size={24} color="black" />
-            </TouchableOpacity>
-          </View>
-          
-          <Text style={styles.username}>{user?.username || "Loading..."}</Text>
-          <Text style={styles.bio}>{user?.bio || "Giới thiệu bản thân ở đây..."}</Text>
-
-          {/* Stats */}
-          <View style={styles.statsContainer}>
-            {[
-              { number: 120, label: "Bài viết" },
-              { number: 340, label: "Người theo dõi" },
-              { number: 180, label: "Đang theo dõi" },
-            ].map((stat, i) => (
-              <View key={i} style={styles.stat}>
-                <Text style={styles.statNumber}>{stat.number}</Text>
-                <Text style={styles.statLabel}>{stat.label}</Text>
+          {loading ? (
+            <ActivityIndicator size="large" color="#00FFFF" style={{ marginTop: 50 } as any} />
+          ) : (
+            <>
+              {/* Header */}
+              <View style={styles.header}>
+                <TouchableOpacity onPress={homepage}>
+                  <FontAwesomeIcon icon={faArrowLeft as IconProp} size={24} color="#fff" />
+                </TouchableOpacity>
+                <Text style={styles.headerText}>Hồ sơ</Text>
+                <TouchableOpacity onPress={logoutBtn}>
+                  <FontAwesomeIcon icon={faBars as IconProp} size={24} color="#fff" />
+                </TouchableOpacity>
               </View>
-            ))}
-          </View>
 
-          {/* Edit profile */}
-          <TouchableOpacity style={styles.editBtn}>
-            <Text style={styles.editText}>Chỉnh sửa hồ sơ</Text>
-          </TouchableOpacity>
+              {/* Avatar */}
+              <View style={styles.avatarBox}>
+                <TouchableOpacity onPress={() => setShowAvatarModal(true)}>
+                  <Image 
+                    source={{ uri: imageUri || userDetail?.avatar || "https://picsum.photos/200" }} 
+                    style={styles.avatar} 
+                  />
+                  <View style={styles.cameraIcon}>
+                    <FontAwesomeIcon icon={faCamera as IconProp} size={18} color="#fff" />
+                  </View>
+                </TouchableOpacity>
+              </View>
 
-          <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate('Ranking') as any}>
-            <Text style={styles.ranking}>Ranking</Text>
-          </TouchableOpacity>
+              {/* Info */}
+              <Text style={styles.username}>{user?.username || "Chưa có tên"}</Text>
+              <Text style={styles.bio}>{user?.UserDetail?.bio || "Giới thiệu bản thân ở đây..."}</Text>
 
-          {/* Progress */}
-          <View style={styles.progressBox}>
-            {user?._id && <Progress userId={user._id} />}
-          </View>
+              {/* Stats */}
+              <View style={styles.statsContainer}>
+                {[
+                  { number: 120, label: "Bài viết" },
+                  { number: 340, label: "Người theo dõi" },
+                  { number: 180, label: "Đang theo dõi" },
+                ].map((stat, i) => (
+                  <View key={i} style={styles.stat}>
+                    <Text style={styles.statNumber}>{stat.number}</Text>
+                    <Text style={styles.statLabel}>{stat.label}</Text>
+                  </View>
+                ))}
+              </View>
 
-          {/* Logout */}
-          <TouchableOpacity style={styles.logoutBtn} onPress={logoutBtn}>
-            <Text style={styles.btnlogout}>Đăng xuất</Text>
-          </TouchableOpacity>
+              {/* Edit profile */}
+              <TouchableOpacity style={styles.editBtn}>
+                <Text style={styles.editText}>Chỉnh sửa hồ sơ</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate('Ranking') as any}>
+                <Text style={styles.editText}>Ranking</Text>
+              </TouchableOpacity>
+
+              {/* Progress */}
+              <View style={styles.progressBox}>
+                {user?._id && <Progress userId={user._id} />}
+              </View>
+
+              {/* Logout */}
+              <TouchableOpacity style={styles.logoutBtn} onPress={logoutBtn}>
+                <Text style={styles.btnlogout}>Đăng xuất</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </ScrollView>
+
+      {/* Modal pick + save avatar */}
+      <Modal visible={showAvatarModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Cập nhật Avatar</Text>
+            <TouchableOpacity style={styles.modalBtn} onPress={pickImage}>
+              <Text style={styles.modalBtnText}>Chọn ảnh từ thư viện</Text>
+            </TouchableOpacity>
+            {imageUri && (
+              <Image source={{ uri: imageUri }} style={styles.previewAvatar} />
+            )}
+            <TouchableOpacity style={styles.saveBtn} onPress={HandleuploadAvatar}>
+              <Text style={styles.saveText}>Lưu Avatar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowAvatarModal(false)}>
+              <Text style={styles.cancelText}>Hủy</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -107,60 +189,62 @@ export default function ProfileScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   scrollview: {
     flex: 1, 
-    backgroundColor: '#fff',
-    paddingTop: getStatusBarHeight(),
+    backgroundColor: '#000',
+  },
+  container: {
+    width: '100%',
+    minHeight: '100%',
+    paddingTop: 0,
+    alignItems: 'center',
+    backgroundColor: '#000',
+    flex: 1,
   },
   header: {
     height: 85,
     width: "100%",
     flexDirection: "row",
     justifyContent: "space-between",
-    padding: 0,
-  },
-  editBtn: {
-    backgroundColor: "#007AFF",
-    paddingVertical: 10,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    marginBottom: 20,
-  },
-  progressBox: {
-    width: "100%",
-    padding: 20,
-    backgroundColor: "#f9f9f9",
-    borderRadius: 12,
-    marginTop: 16,
-  },
-  logoutBtn: {
-    backgroundColor: "#FF3B30",
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 0,
-    width: "60%",
-    alignSelf: "center",
     alignItems: "center",
+    paddingHorizontal: 16,
+    backgroundColor: "#111",
+    borderBottomWidth: 1,
+    borderBottomColor: "#222"
   },
-  container: {
-    width: '100%',
-    height: '100%',
-    paddingTop: 0,
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    flex: 1,
+  headerText: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "bold"
+  },
+  avatarBox: {
+    marginTop: 20,
+    alignItems: "center",
+    position: "relative"
   },
   avatar: {
-    width: 70,
-    height: 70,
+    width: 100,
+    height: 100,
     borderRadius: 60,
-    marginBottom: 10,
+    borderWidth: 3,
+    borderColor: "#0ff",
+  },
+  cameraIcon: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    backgroundColor: "#007AFF",
+    padding: 6,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: "#000"
   },
   username: {
-    color: '#000',
-    fontSize: 18,
+    color: '#0ff',
+    fontSize: 20,
     fontWeight: 'bold',
+    marginTop: 12,
   },
   bio: {
-    color: '#666',
+    color: '#aaa',
     fontSize: 14,
     marginBottom: 20,
   },
@@ -176,15 +260,100 @@ const styles = StyleSheet.create({
   statNumber: {
     fontWeight: 'bold',
     fontSize: 18,
-    color: '#000',
+    color: '#fff',
   },
   statLabel: {
-    color: '#888',
+    color: '#aaa',
+  },
+  editBtn: {
+    backgroundColor: "#222",
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#0ff",
   },
   editText: {
-    color: "#fff",
+    color: "#0ff",
     fontWeight: "600",
   },
-  ranking: { color: "#fff", fontWeight: "600" },
+  progressBox: {
+    width: "100%",
+    padding: 20,
+    backgroundColor: "#111",
+    borderRadius: 12,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: "#0ff",
+  },
+  logoutBtn: {
+    backgroundColor: "#FF3B30",
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 20,
+    width: "60%",
+    alignSelf: "center",
+    alignItems: "center",
+  },
   btnlogout: { color: "#fff", fontWeight: "bold" },
+
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  modalContent: {
+    width: "85%",
+    backgroundColor: "#111",
+    borderRadius: 12,
+    padding: 20,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#0ff"
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#0ff",
+    marginBottom: 16
+  },
+  modalBtn: {
+    backgroundColor: "#007AFF",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 12
+  },
+  modalBtnText: {
+    color: "#fff",
+    fontWeight: "600"
+  },
+  previewAvatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 60,
+    marginVertical: 12,
+    borderWidth: 2,
+    borderColor: "#0ff"
+  },
+  saveBtn: {
+    backgroundColor: "#0ff",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 10,
+    width: "100%",
+    alignItems: "center"
+  },
+  saveText: { color: "#000", fontWeight: "bold" },
+  cancelBtn: {
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#0ff",
+    width: "100%",
+    alignItems: "center"
+  },
+  cancelText: { color: "#0ff", fontWeight: "600" }
 });
