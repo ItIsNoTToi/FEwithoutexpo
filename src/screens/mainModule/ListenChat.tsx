@@ -40,12 +40,13 @@ export default function ListenChat({ route, navigation }: Props) {
   const [user, setUser] = useState<User>();
   const [userInput, setUserInput] = useState('');
   const [content, setContent] = useState('');
+  const [audioUrl, setAudioUrl] = useState('');
   const [contentVisible, setContentVisible] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
   const [sending, setSending] = useState(false);
   const [lessonEnded, setLessonEnded] = useState(false);
   const [mode, setMode] = useState<Mode>("idle");
-  const { data: messages = [], appendMessage, patchLastAIMessage } = useChatlog(user?._id, selectedLesson?._id);
+  const { data: histories = [], appendMessage, patchLastAIMessage } = useChatlog(user?._id, selectedLesson?._id);
   const [recognized, setRecognized] = useState("");
   const [pitch, setPitch] = useState<number>(0);
   const [error, setError] = useState("");
@@ -189,15 +190,16 @@ export default function ListenChat({ route, navigation }: Props) {
 
   // Start lesson if no messages yet
   useEffect(() => {
-    if (!user || !selectedLesson?._id || messages.length > 0) return;
+    if (!user || !selectedLesson?._id || histories.length > 0) return;
 
     let mounted = true;
     (async () => {
       try {
         const d = await startLessonAI(user?._id, selectedLesson?._id, type);
         if (mounted) {
+          setAudioUrl(d.audioUrl);
           setContent(d.content);
-          Alert.alert("Info", d.message);
+          // Alert.alert("Info", d.message);
           appendMessage({ from: "ai", text: d.firstQuestion });
           speak(d.firstQuestion);
         }
@@ -206,7 +208,7 @@ export default function ListenChat({ route, navigation }: Props) {
       }
     })();
     return () => { mounted = false; };
-  }, [user, selectedLesson, messages.length, appendMessage, type]);
+  }, [user, selectedLesson, histories.length, appendMessage, type]);
 
   // Confirm before leaving
   useEffect(() => {
@@ -268,10 +270,10 @@ export default function ListenChat({ route, navigation }: Props) {
 
   // Auto scroll
   useEffect(() => {
-    if (messages.length > 0) {
+    if (histories.length > 0) {
       flatRef.current?.scrollToEnd({ animated: true });
     }
-  }, [messages]);
+  }, [histories]);
 
   // Send answer
   const handleSend = async () => {
@@ -312,24 +314,38 @@ export default function ListenChat({ route, navigation }: Props) {
     >
       <View style={styles.innerContainer}>
         <Text style={styles.title}>{selectedLesson.title} - {selectedLesson.type}</Text>
+        <View style={{ height: 1, backgroundColor: "#444", marginHorizontal: 16, marginBottom: 8, flexDirection: 'row', } as any} >
+          {
+            audioUrl ? (
+              <View style={{ flexDirection: "row", justifyContent: "center", marginBottom: 8 } as any}>
+                <TouchableOpacity onPress={() => { Tts.stop(); Tts.speak(content); }} style={{ marginHorizontal: 12 } as any}>
+                  <Ionicons name="play-circle-outline" size={36} color="#4FACFE" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => Tts.stop()} style={{ marginHorizontal: 12 } as any}>
+                  <Ionicons name="stop-circle-outline" size={36} color="#FF0044" />
+                </TouchableOpacity>
+              </View>)        
+            : null
+          }
 
-        {/* Lesson content toggle */}
-        <TouchableOpacity onPress={() => setContentVisible(!contentVisible)}>
-          <Text style={styles.contentToggle}>
-            {contentVisible ? 'Hide Lesson Content' : 'Show Lesson Content'}
-          </Text>
-        </TouchableOpacity>
+          {/* Lesson content toggle */}
+          <TouchableOpacity onPress={() => setContentVisible(!contentVisible)}>
+            <Text style={styles.contentToggle}>
+              {contentVisible ? 'Hide Lesson Content' : 'Show Lesson Content'}
+            </Text>
+          </TouchableOpacity>
 
-        {contentVisible && (
-          <ScrollView style={styles.contentBox}>
-            <Text style={styles.contentText}>{content}</Text>
-          </ScrollView>
-        )}
+          {contentVisible && (
+            <ScrollView style={styles.contentBox}>
+              <Text style={styles.contentText}>{content}</Text>
+            </ScrollView>
+          )}
+        </View>
 
         {/* Chat messages */}
         <FlatList
           ref={flatRef}
-          data={messages}
+          data={histories}
           keyExtractor={(_, idx) => String(idx)}
           contentContainerStyle={styles.chatList}
           // Gọn hơn khi render message

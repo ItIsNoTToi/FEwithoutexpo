@@ -24,7 +24,7 @@ async function saveCache(userId: string, lessonId: string, msgs: ChatMessage[]) 
 export function useChatlog(userId?: string, lessonId?: string) {
   const queryClient = useQueryClient();
 
-  const { data: messages = [] } = useQuery<ChatMessage[]>({
+  const { data: histories = [] } = useQuery<ChatMessage[]>({
     queryKey: ["chatlog", userId, lessonId],
     queryFn: async () => {
       if (!userId || !lessonId) return [];
@@ -44,11 +44,11 @@ export function useChatlog(userId?: string, lessonId?: string) {
 
       // 2. Gọi API
       const res = await fetchChatlog(userId, lessonId);
-      const raw = res?.data?.messages ?? [];
-      // eslint-disable-next-line @typescript-eslint/no-shadow
+      const raw = res?.data?.history ?? [];
+  
       const messages: ChatMessage[] = raw.map((m: any) => ({
         from: m.role === "user" ? "user" : "ai",
-        text: m.content ?? "",
+        text: m.text ?? "",
       }));
 
       // 3. Lưu lại cache mới
@@ -102,5 +102,5 @@ export function useChatlog(userId?: string, lessonId?: string) {
     );
   };
 
-  return { data: messages, appendMessage, patchLastAIMessage };
+  return { data: histories, appendMessage, patchLastAIMessage };
 }

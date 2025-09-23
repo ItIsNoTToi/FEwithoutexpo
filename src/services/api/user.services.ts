@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "../../config/axiosconfig";
+import { clearAICache } from "../aiCache";
 
 export const getUser = async () => {
   try {
@@ -32,6 +33,9 @@ export const getUser = async () => {
 export const logout_fe = async () => {
   // FE (mobile/web)
   await AsyncStorage.removeItem("authToken");
+  await clearAICache();
+  await AsyncStorage.removeItem("userId");
+  await AsyncStorage.removeItem("chatlog"); // nếu bạn lưu chatlog ở local
   const response = await axios.post('/admin/logout-fe');
   return response.data;
 }

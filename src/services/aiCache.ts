@@ -26,3 +26,14 @@ export const setCachedAI = async (key: string, value: string) => {
   aiAnswerCache.set(key, value);
   await AsyncStorage.setItem(`aiAnswer:${key}`, value);
 };
+
+
+export const clearAICache = async () => {
+  aiAnswerCache.clear();  
+  // Xoá tất cả keys liên quan đến aiAnswer
+  const allKeys = await AsyncStorage.getAllKeys();
+  const aiKeys = allKeys.filter(key => key.startsWith('aiAnswer:'));
+  await AsyncStorage.multiRemove(aiKeys);
+  console.log("AI cache cleared");
+  return true;
+}

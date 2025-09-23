@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, TextInput, Image, KeyboardAvoidingView } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, TextInput, Image, KeyboardAvoidingView, Button } from 'react-native';
 import { fetchRegister } from '../../services/api/auth.services';
 import { useAuth } from '../../hooks/AuthContext';
 import { ScrollView } from 'react-native-gesture-handler';
 import { saveToken } from './login';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 export default function Register({ navigation }: any) {
   const [username, setUserName] = useState('');
@@ -13,6 +14,24 @@ export default function Register({ navigation }: any) {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [date, setDate] = useState(new Date())
+  const [mode, setMode] = useState('date' as any);
+  const [show, setShow] = useState(false);
+
+  const onChange = (event: any, selectedDate: any) => {
+    const currentDate = selectedDate;
+    setShow(false);
+    setDate(currentDate);
+  };
+
+  const showMode = (currentMode: any) => {
+    setShow(true);
+    setMode(currentMode);
+  };
+
+  const showDatepicker = () => {
+    showMode('date');
+  };
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
@@ -40,6 +59,9 @@ export default function Register({ navigation }: any) {
         email: email.trim(),
         phone: phoneNumber.trim(),
         password: password.trim(),
+        dateOfBirth: date.toISOString().split('T')[0], // Lưu định dạng YYYY-MM-DD
+        role: 'user',
+        avatar: 'https://i.pravatar.cc/150?u=' + Math.random().toString(36).substring(7) // random avatar
       }
 
       // console.log(userData);
@@ -96,6 +118,19 @@ export default function Register({ navigation }: any) {
             keyboardType="phone-pad"
             autoCapitalize="none"
           />
+          <View style={{ width: '100%', marginBottom: 16, } as any}>
+              <Text style={{ marginBottom: 8, color: '#555' } as any}>Date of Birth:  {date.toLocaleString()}</Text>
+              {show && (
+                <DateTimePicker
+                  testID="dateTimePicker"
+                  value={date}
+                  mode={mode}
+                  is24Hour={true}
+                  onChange={onChange}
+                />
+              )}
+              <Button onPress={showDatepicker} title="Enter your date!" />
+          </View>
 
           <TextInput
             style={styles.input}

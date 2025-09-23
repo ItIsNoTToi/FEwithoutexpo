@@ -54,7 +54,7 @@ export const fetchAIStream = (
 
 export const startLessonAI = async (userId: any, lessonId: any, type: any) => {
     try {
-      console.log(type, userId, lessonId);
+      // console.log(type, userId, lessonId);
       const response = await axiosInstance.post('/api/ai/start',{
           userId: userId, 
           lessonId: lessonId,
