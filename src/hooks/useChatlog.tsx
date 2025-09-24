@@ -3,7 +3,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fetchChatlog } from "../services/api/chatlog.services";
 
-export type ChatMessage = { from: "user" | "system"; text: string };
+export type ChatMessage = { 
+  from: "user" | "system"; 
+  text: string; 
+  loading?: boolean;  // <-- thêm
+};
 
 const storageKey = (userId: string, lessonId: string) =>
   `chatlog:${userId}:${lessonId}`;
@@ -15,10 +19,14 @@ async function saveCache(userId: string, lessonId: string, msgs: ChatMessage[]) 
     JSON.stringify(
       msgs.map((m) => ({
         role: m.from,
-        content: m.text,
+        text: m.text,
       }))
     )
   );
+}
+
+export const clearChatlogCache = async (userId: string, lessonId: string) => {
+  await AsyncStorage.removeItem(storageKey(userId, lessonId));
 }
 
 export function useChatlog(userId?: string, lessonId?: string) {
@@ -38,7 +46,7 @@ export function useChatlog(userId?: string, lessonId?: string) {
         const raw = JSON.parse(cached);
         initial = raw.map((m: any) => ({
           from: m.role === "user" ? "user" : "system",
-          text: m.content ?? "",
+          text: m.text ?? "",
         }));
       }
 
@@ -87,20 +95,19 @@ export function useChatlog(userId?: string, lessonId?: string) {
         const last = newMsgs[newMsgs.length - 1];
         if (!last || last.from !== "system") return old;
 
-        let newText = "";
-        if (incoming.startsWith(last.text)) {
-          newText = incoming; // snapshot
-        } else {
-          newText = last.text + incoming; // delta
-        }
+        let newText = last.text + incoming;
 
-        newMsgs[newMsgs.length - 1] = { ...last, text: newText };
+        newMsgs[newMsgs.length - 1] = { 
+          ...last, 
+          text: newText, 
+          loading: false  // <-- đánh dấu đã có AI trả lời
+        };
 
         saveCache(userId, lessonId, newMsgs);
         return newMsgs;
       }
     );
   };
-
+  
   return { data: histories, appendMessage, patchLastAIMessage };
 }

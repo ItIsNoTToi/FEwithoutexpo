@@ -105,7 +105,7 @@ export default function ProfileScreen({ navigation }: any) {
       const data = await SaveUser(updatedUser);
 
       if (data.success) {
-        Alert.alert("Lưu thông tin thành công");
+        Alert.alert(data.message || "Lưu thông tin thành công");
         setShowEditForm(false);
         fetchUser();
       } else {

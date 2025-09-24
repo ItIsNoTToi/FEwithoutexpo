@@ -1,7 +1,7 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import axiosInstance from "../../config/axiosconfig";
 import Config from "react-native-config";
 import EventSource from "react-native-sse";
+import { clearChatlogCache } from "../../hooks/useChatlog";
 
 const URL_API = Config.URL_API;
 
@@ -11,6 +11,8 @@ export const fetchAIStream = (
   onDone: () => void,
   onEnd?: () => void   // thêm callback end
 ) => {
+
+  console.log("Starting AI stream with data:", data);
   const es = new EventSource(`${URL_API}/api/ai/lesson-chat-stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -98,7 +100,8 @@ export const retakeLessonApi = async (userId: any, lessonId: any) => {
       lessonId: lessonId,
     });
 
-    await AsyncStorage.removeItem(`chatlog:${userId}:${lessonId}`);
+    await clearChatlogCache(userId, lessonId);
+
     return response.data;
   } catch (error: any) {
     throw new Error(error.message);

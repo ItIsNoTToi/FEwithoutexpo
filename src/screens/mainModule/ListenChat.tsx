@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // screens/LearningWithAI.tsx
 import React, { useEffect, useRef, useState } from "react";
@@ -21,6 +22,7 @@ import Tts from 'react-native-tts';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Voice from '@react-native-community/voice';
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import LoadingSpinner from "../../features/LoadingSpinner";
 
 type Mode = "idle" | "record" | "keyboard";
 type Props = NativeStackScreenProps<LessonStackParamList, 'ListenChat'>;
@@ -38,15 +40,17 @@ export default function ListenChat({ route, navigation }: Props) {
   const flatRef = useRef<FlatList<any>>(null);
   const selectedLesson = useSelector((s: RootState) => s?.lesson.selectedLesson);
   const [user, setUser] = useState<User>();
+  const [userId, setUserId] = useState<string>("");
   const [userInput, setUserInput] = useState('');
   const [content, setContent] = useState('');
-  const [audioUrl, setAudioUrl] = useState('');
   const [contentVisible, setContentVisible] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
   const [sending, setSending] = useState(false);
   const [lessonEnded, setLessonEnded] = useState(false);
   const [mode, setMode] = useState<Mode>("idle");
-  const { data: histories = [], appendMessage, patchLastAIMessage } = useChatlog(user?._id, selectedLesson?._id);
+  const { data: messages = [], appendMessage, patchLastAIMessage } = useChatlog(userId, selectedLesson?._id);
+  const lessonStarted = useRef(false);
+  const [loading, setLoading] = useState(false);
   const [recognized, setRecognized] = useState("");
   const [pitch, setPitch] = useState<number>(0);
   const [error, setError] = useState("");
@@ -56,11 +60,16 @@ export default function ListenChat({ route, navigation }: Props) {
   const [partialResults, setPartialResults] = useState<string[]>([]);
 
   useEffect(() => {
-    getUser().then(d => setUser(d.data)).catch(console.error);
+    getUser()
+    .then(d => {
+        setUser(d.data);
+        setUserId(d.data._id);
+    })
+    .catch(console.error);
   }, []);
 
   useEffect(() => {
-    if (resetCache) AsyncStorage.removeItem(`chatlog:${user?._id}:${selectedLesson?._id}`);
+    if (resetCache) AsyncStorage.removeItem(`chatlog:${userId}:${selectedLesson?._id}`);
   }, [resetCache, user, selectedLesson]);
   
   useEffect(() => {
@@ -74,16 +83,22 @@ export default function ListenChat({ route, navigation }: Props) {
       setRecognized("√");
     };
 
-    Voice.onSpeechEnd = onSpeechEnd;
+    Voice.onSpeechEnd = (e: any) => {
+      console.log("onSpeechEnd: ", e);
+      setEnd("√");
+    };
 
     Voice.onSpeechError = (e: any) => {
       console.log("onSpeechError: ", e);
       setError(JSON.stringify(e.error));
     };
 
-    Voice.onSpeechResults = (e: any) => {
+    Voice.onSpeechResults = async (e: any) => {
       console.log("onSpeechResults: ", e);
-      setResults(e.value);
+      setResults(e.value[0]);
+      const bestGuess  = e.value[0];
+      console.log("Best guess: ", bestGuess);
+      await sendMessage(bestGuess);
     };
 
     Voice.onSpeechPartialResults = (e: any) => {
@@ -99,28 +114,22 @@ export default function ListenChat({ route, navigation }: Props) {
     return () => {
       Voice.destroy().then(Voice.removeAllListeners);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const onSpeechEnd = async (e: Event) => {
-    console.log("onSpeechEnd: ", e);
-      if (results.length > 0) {
-        const bestGuess  = results[0];
-        await sendMessage (bestGuess);
-      }
-      setEnd("√");
-  }
-
   const sendMessage  = async (text: string) =>{
+      setMode('idle');
+      if (sending || !selectedLesson?._id || !userId) return;
+      setSending(true);
       if (text) {
+        
       appendMessage({ from: "user", text: text});
       setUserInput("");
-      appendMessage({ from: "system", text: "" });
+      appendMessage({ from: "system", text: "", loading: true });
 
       let fullText = "";
       try {
         fetchAIStream(
-          { userId: user?._id, lessonId: selectedLesson?._id, userSpeechText: text },
+          { userId: userId, lessonId: selectedLesson?._id, userSpeechText: text },
           parsed => {
             if (parsed.delta) {
               fullText += parsed.delta;
@@ -183,32 +192,32 @@ export default function ListenChat({ route, navigation }: Props) {
     setEnd("");
   };
 
-  // Load user
-  useEffect(() => {
-    getUser().then(d => setUser(d.data)).catch(console.error);
-  }, []);
-
   // Start lesson if no messages yet
-  useEffect(() => {
-    if (!user || !selectedLesson?._id || histories.length > 0) return;
 
-    let mounted = true;
+  useEffect(() => {
+    if (!user || !selectedLesson?._id || messages.length > 0){
+      return;
+    } 
+    if (lessonStarted.current) return; // ngăn gọi lại
+    lessonStarted.current = true;
     (async () => {
       try {
-        const d = await startLessonAI(user?._id, selectedLesson?._id, type);
-        if (mounted) {
-          setAudioUrl(d.audioUrl);
-          setContent(d.content);
-          // Alert.alert("Info", d.message);
-          appendMessage({ from: "system", text: d.firstQuestion });
-          speak(d.firstQuestion);
-        }
+        setLoading(true);
+        const d = await startLessonAI(userId, selectedLesson._id, type);
+        setContent(d.content);
+        Alert.alert("Info", d.message);
+        console.log(1);
+        appendMessage({ from: "system", text: d.firstQuestion });
+        speak(d.firstQuestion);
+        console.log(2);
+        setLoading(false);
       } catch (err) {
         console.error(err);
+        console.log(3);
+        setLoading(false);
       }
     })();
-    return () => { mounted = false; };
-  }, [user, selectedLesson, histories.length, appendMessage, type]);
+  }, [user, selectedLesson, type]);
 
   // Confirm before leaving
   useEffect(() => {
@@ -224,7 +233,7 @@ export default function ListenChat({ route, navigation }: Props) {
           onPress: async () => {
             Tts.stop();
             try {
-              await PauseLessonAI(user?._id, selectedLesson?._id)
+              await PauseLessonAI(userId, selectedLesson?._id)
                 .then(d => Alert.alert("Info", d.message))
                 .catch(console.error);
             } catch (err) {
@@ -247,10 +256,10 @@ export default function ListenChat({ route, navigation }: Props) {
         onPress: async () => {
           setIsEnding(true);
           Tts.stop();
-          if (!user?._id || !selectedLesson?._id) return;
+          if (!userId || !selectedLesson?._id) return;
 
           try {
-            await EndLessonAI(user._id, selectedLesson._id)
+            await EndLessonAI(userId, selectedLesson._id)
               .then(d => Alert.alert("Info", d.message))
               .catch(console.error);
           } catch (err) {
@@ -270,25 +279,25 @@ export default function ListenChat({ route, navigation }: Props) {
 
   // Auto scroll
   useEffect(() => {
-    if (histories.length > 0) {
+    if (messages.length > 0) {
       flatRef.current?.scrollToEnd({ animated: true });
     }
-  }, [histories]);
+  }, [messages]);
 
   // Send answer
   const handleSend = async () => {
-    if (sending || !userInput.trim() || !selectedLesson?._id || !user?._id) return;
+    if (sending || !userInput.trim() || !selectedLesson?._id || !userId) return;
     setSending(true);
 
     const answer = userInput.trim();
     appendMessage({ from: "user", text: answer });
     setUserInput("");
-    appendMessage({ from: "system", text: "" });
+    appendMessage({ from: "system", text: "", loading: true });
 
     let fullText = "";
     try {
       fetchAIStream(
-        { userId: user._id, lessonId: selectedLesson._id, userSpeechText: answer },
+        { userId: userId, lessonId: selectedLesson._id, userSpeechText: answer },
         parsed => {
           if (parsed.delta) {
             fullText += parsed.delta;
@@ -305,8 +314,10 @@ export default function ListenChat({ route, navigation }: Props) {
   };
 
   if (!selectedLesson) return <Text style={styles.centerText}>No lesson selected</Text>;
-
-  return (
+  if(!user) return <Text style={styles.centerText}>Loading user...</Text>;
+  if (loading === true ) return <Text style={styles.centerText}>Loading lesson...</Text>;
+  else
+  return ( 
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -314,48 +325,41 @@ export default function ListenChat({ route, navigation }: Props) {
     >
       <View style={styles.innerContainer}>
         <Text style={styles.title}>{selectedLesson.title} - {selectedLesson.type}</Text>
-        <View style={{ height: 1, backgroundColor: "#444", marginHorizontal: 16, marginBottom: 8, flexDirection: 'row', } as any} >
-          {
-            audioUrl ? (
-              <View style={{ flexDirection: "row", justifyContent: "center", marginBottom: 8 } as any}>
-                <TouchableOpacity onPress={() => { Tts.stop(); Tts.speak(content); }} style={{ marginHorizontal: 12 } as any}>
-                  <Ionicons name="play-circle-outline" size={36} color="#4FACFE" />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => Tts.stop()} style={{ marginHorizontal: 12 } as any}>
-                  <Ionicons name="stop-circle-outline" size={36} color="#FF0044" />
-                </TouchableOpacity>
-              </View>)        
-            : null
-          }
 
-          {/* Lesson content toggle */}
-          <TouchableOpacity onPress={() => setContentVisible(!contentVisible)}>
-            <Text style={styles.contentToggle}>
-              {contentVisible ? 'Hide Lesson Content' : 'Show Lesson Content'}
-            </Text>
-          </TouchableOpacity>
+        {/* Lesson content toggle */}
+        <TouchableOpacity onPress={() => setContentVisible(!contentVisible)}>
+          <Text style={styles.contentToggle}>
+            {contentVisible ? 'Hide Lesson Content' : 'Show Lesson Content'}
+          </Text>
+        </TouchableOpacity>
 
-          {contentVisible && (
-            <ScrollView style={styles.contentBox}>
-              <Text style={styles.contentText}>{content}</Text>
-            </ScrollView>
-          )}
-        </View>
+        {contentVisible && (
+          <ScrollView style={styles.contentBox}>
+            <Text style={styles.contentText}>{content}</Text>
+          </ScrollView>
+        )}
 
         {/* Chat messages */}
         <FlatList
           ref={flatRef}
-          data={histories}
+          data={messages}
           keyExtractor={(_, idx) => String(idx)}
           contentContainerStyle={styles.chatList}
           // Gọn hơn khi render message
           renderItem={({ item }) => {
-            const isUser = item.from === "user";
+              const isUser = item.from === "user";
+            
             return (
               <View style={[styles.messageBubble, isUser ? styles.userBubble : styles.aiBubble]}>
-                <Text style={[styles.messageText, isUser && { color: "#fff" }] as any}>
-                  {item.text}
-                </Text>
+                {item.loading ? (
+                  <View style={styles.loadingDots}>
+                    <LoadingSpinner size={60} color="#FF6B6B" thickness={4} />
+                  </View>
+                ) : (
+                  <Text style={[styles.messageText, isUser && { color: "#fff" }] as any}>
+                    {item.text}
+                  </Text>
+                )}
               </View>
             );
           }}
@@ -369,8 +373,8 @@ export default function ListenChat({ route, navigation }: Props) {
           </TouchableOpacity>
         )}
 
-        {/* --- Controls ---
-        <View >
+        {/* --- Controls --- */}
+        {/* <View >
           <Text style={{ color: '#000'} as any}>Welcome to React Native Voice!</Text>
           <Text style={{ color: '#000'} as any}>Press the button and start speaking.</Text>
           <Text style={{ color: '#000'} as any}>{`Started: ${started}`}</Text>
@@ -405,13 +409,13 @@ export default function ListenChat({ route, navigation }: Props) {
 
           {mode === "record" && (
             <View style={styles.row}>
-              <Animated.View style={[styles.dot, { transform: [{ scale: pulseAnim }] }]} />
+              <LoadingSpinner size={30} color="#FF6B6B" thickness={4} />
               <TouchableOpacity style={[styles.circleBtn, { backgroundColor: "red" }] as any}
                 onPress={() => { stopRecognizing(); setMode("idle"); }}>
                 <Ionicons name="stop-circle-outline" size={26} color="#fff" />
               </TouchableOpacity>
-               <TouchableOpacity onPress={destroyRecognizer} style={[styles.circleBtn, { backgroundColor: "red" }] as any}>
-                 <Ionicons name="remove-circle-outline" size={26} color="#fff" />
+              <TouchableOpacity onPress={destroyRecognizer} style={[styles.circleBtn, { backgroundColor: "red" }] as any}>
+                <Ionicons name="remove-circle-outline" size={26} color="#fff" />
               </TouchableOpacity>
               <TouchableOpacity style={[styles.circleBtn, { backgroundColor: "#999" }] as any}
                 onPress={() => { cancelRecognizing(); setMode("idle"); }}>
@@ -440,7 +444,6 @@ export default function ListenChat({ route, navigation }: Props) {
             </View>
           )}
         </View>
-         
       </View>
     </KeyboardAvoidingView>
   );
@@ -530,5 +533,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, 
     color: '#fff',
     backgroundColor: "rgba(255,255,255,0.05)"
+  },
+  loadingDots: { 
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    height: 20,
   },
 });

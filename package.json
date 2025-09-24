@@ -5,7 +5,7 @@
   "scripts": {
     "android": "react-native run-android",
     "ios": "react-native run-ios",
-    "start": "react-native start",
+    "start": "react-native start --reset-cache",
     "clean": "cd android && ./gradlew clean && cd ..",
     "rebuild": "yarn clean && yarn android",
     "test": "jest",
