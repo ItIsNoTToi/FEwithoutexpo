@@ -91,11 +91,11 @@ export default function ListLesson({ navigation }: Props) {
     );
 
     return (
-      <TouchableOpacity
+      <View
         style={[styles.card, isLessonDisabled(item._id) && { opacity: 0.5 }] as any}
-        disabled={isLessonDisabled(item._id)}
-        activeOpacity={0.8}
-        onPress={() => goToLesson(item, item.type, false)}
+        // disabled={isLessonDisabled(item._id)}
+        // activeOpacity={0.8}
+        // onPress={() => goToLesson(item, item.type, false)}
       >
         <View style={styles.cardHeader}>
           <Text style={styles.icon}>📘</Text>
@@ -143,7 +143,7 @@ export default function ListLesson({ navigation }: Props) {
             </TouchableOpacity>
           </View>
         )}
-      </TouchableOpacity>
+      </View>
     );
   };
 

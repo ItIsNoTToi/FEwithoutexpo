@@ -7,12 +7,13 @@ import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faArrowLeft , faBars, faCamera } from '@fortawesome/free-solid-svg-icons';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import User from '../models/user';
-import { getUser, logout_fe, uploadAvatar } from '../services/api/user.services';
+import { getUser, logout_fe, SaveUser, uploadAvatar } from '../services/api/user.services';
 import Progress from './Data/progressScreen';
 import { useAuth } from '../hooks/AuthContext';
 import { SafeAreaView } from "react-native-safe-area-context";
 import UserDetail from '../models/userdetail';
 import { launchImageLibrary } from "react-native-image-picker";
+import ProfileInformation from './ProfileInformation';
 
 export default function ProfileScreen({ navigation }: any) {
   const [user, setUser] = useState<User>();
@@ -21,15 +22,24 @@ export default function ProfileScreen({ navigation }: any) {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const { logout } = useAuth();
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [showProgress, setShowProgress] = useState(false);
+
+  // Load user info
+  const fetchUser = async () => {
+    try {
+      setLoading(true);
+      const data = await getUser();
+      setUser(data.data);
+    } catch (err) {
+      console.error("Lỗi load user:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    getUser()
-      .then(data => { 
-        setUser(data.data); 
-        setUserDetail(data.data.UserDetail)
-      })
-      .catch(error => console.error(error))
-      .finally(() => setLoading(false));
+    fetchUser();
   }, []);
 
   const logoutBtn = async () => {
@@ -89,9 +99,29 @@ export default function ProfileScreen({ navigation }: any) {
     return navigation.navigate('Home');
   }
 
+  const handleSave = async (updatedUser: User) => {
+    try {
+      setLoading(true);
+      const data = await SaveUser(updatedUser);
+
+      if (data.success) {
+        Alert.alert("Lưu thông tin thành công");
+        setShowEditForm(false);
+        fetchUser();
+      } else {
+        Alert.alert("Có lỗi khi lưu thông tin");
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#000" } as any}>
       <ScrollView style={styles.scrollview} contentContainerStyle={{ paddingBottom: 40 } as any}>
+        
         <View style={styles.container}>
           {loading ? (
             <ActivityIndicator size="large" color="#00FFFF" style={{ marginTop: 50 } as any} />
@@ -122,7 +152,8 @@ export default function ProfileScreen({ navigation }: any) {
               </View>
 
               {/* Info */}
-              <Text style={styles.username}>{user?.username || "Chưa có tên"}</Text>
+              <Text style={styles.Name}>{user?.UserDetail?.FirstName} {user?.UserDetail?.LastName}</Text>
+              <Text style={styles.username}>@{user?.username}</Text>
               <Text style={styles.bio}>{user?.UserDetail?.bio || "Giới thiệu bản thân ở đây..."}</Text>
 
               {/* Stats */}
@@ -140,18 +171,33 @@ export default function ProfileScreen({ navigation }: any) {
               </View>
 
               {/* Edit profile */}
-              <TouchableOpacity style={styles.editBtn}>
+              <TouchableOpacity style={styles.editBtn} onPress={() => setShowEditForm(!showEditForm)}>
                 <Text style={styles.editText}>Chỉnh sửa hồ sơ</Text>
               </TouchableOpacity>
+              <View style={{flexDirection: 'row'} as any }>
+                <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate('Ranking') as any}>
+                  <Text style={styles.editText}>Ranking</Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate('Ranking') as any}>
-                <Text style={styles.editText}>Ranking</Text>
-              </TouchableOpacity>
+                <TouchableOpacity style={styles.editBtn} onPress={() => setShowProgress(!showProgress)}>
+                  <Text style={styles.editText}>Progress</Text>
+                </TouchableOpacity>
+              </View>
+
+              {
+                showEditForm &&
+                <View style={styles.progressBox}>
+                  <ProfileInformation user={user as any} onSave={handleSave} />
+                </View>
+              }
 
               {/* Progress */}
-              <View style={styles.progressBox}>
-                {user?._id && <Progress userId={user._id} />}
-              </View>
+              {
+                showProgress &&
+                <View style={styles.progressBox}>
+                  <Progress userId={user!._id} />
+                </View>
+              }
 
               {/* Logout */}
               <TouchableOpacity style={styles.logoutBtn} onPress={logoutBtn}>
@@ -237,9 +283,15 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#000"
   },
-  username: {
+  Name: {
     color: '#0ff',
     fontSize: 20,
+    fontWeight: 'bold',
+    marginTop: 12,
+  },
+  username: {
+    color: 'rgba(96, 241, 241, 1)',
+    fontSize: 10,
     fontWeight: 'bold',
     marginTop: 12,
   },

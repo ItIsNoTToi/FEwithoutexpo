@@ -4,7 +4,7 @@ import axiosInstance from "../../config/axiosconfig";
 export const GetQuiz = async () => {
     try {
         const response = await axiosInstance.get('/api/quizs');
-        if(response.data.success == true){
+        if(response.data.success === true){
             return response.data;
         }
     } catch (error) {
@@ -15,7 +15,7 @@ export const GetQuiz = async () => {
 export const getQuestionByQuizId = async (quizId: string) => {
     try {
         const response = await axiosInstance.get(`/api/quizs/${quizId}/questions`);
-        if(response.data.success == true){
+        if(response.data.success === true){
             // console.log(response.data);
             return response.data;
         }

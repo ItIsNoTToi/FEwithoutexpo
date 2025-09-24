@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fetchChatlog } from "../services/api/chatlog.services";
 
-export type ChatMessage = { from: "user" | "ai"; text: string };
+export type ChatMessage = { from: "user" | "system"; text: string };
 
 const storageKey = (userId: string, lessonId: string) =>
   `chatlog:${userId}:${lessonId}`;
@@ -37,7 +37,7 @@ export function useChatlog(userId?: string, lessonId?: string) {
       if (cached) {
         const raw = JSON.parse(cached);
         initial = raw.map((m: any) => ({
-          from: m.role === "user" ? "user" : "ai",
+          from: m.role === "user" ? "user" : "system",
           text: m.content ?? "",
         }));
       }
@@ -47,7 +47,7 @@ export function useChatlog(userId?: string, lessonId?: string) {
       const raw = res?.data?.history ?? [];
   
       const messages: ChatMessage[] = raw.map((m: any) => ({
-        from: m.role === "user" ? "user" : "ai",
+        from: m.role === "user" ? "user" : "system",
         text: m.text ?? "",
       }));
 
@@ -85,7 +85,7 @@ export function useChatlog(userId?: string, lessonId?: string) {
 
         const newMsgs = [...old];
         const last = newMsgs[newMsgs.length - 1];
-        if (!last || last.from !== "ai") return old;
+        if (!last || last.from !== "system") return old;
 
         let newText = "";
         if (incoming.startsWith(last.text)) {

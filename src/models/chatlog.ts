@@ -5,7 +5,7 @@ export interface chatlog{
     user: user,
     messages: [
         {
-            role: 'user'| 'ai',
+            role: 'user'| 'system' | 'assistant',
             content: String,
             timestamp: Date
         }

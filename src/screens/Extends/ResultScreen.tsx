@@ -7,7 +7,6 @@ type Props = NativeStackScreenProps<QuizStackParamList, "Result">;
 export default function ResultScreen({ route, navigation }: Props) {
   const { score, total, totalscore, quizId } = route.params;
 
-
   return (
     <View style={styles.container}>
         <Text style={styles.title}>🎉 Quiz Completed!</Text>

@@ -17,4 +17,5 @@ export default interface Lesson {
   createdAt?: Date;
   updatedAt?: Date;
   status?: 'close' | 'open';
+  
 }

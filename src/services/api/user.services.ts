@@ -40,6 +40,24 @@ export const logout_fe = async () => {
   return response.data;
 }
 
+export const SaveUser = async (data: any) => {
+  try {
+    const token = await AsyncStorage.getItem("authToken");
+    if (!token) {
+      throw new Error("No token found");
+    }
+    console.log("Saving user with data:", data);
+
+    const res = await axios.put(`/api/update/User/${data._id}`, {
+      data: data,
+    });
+    // console.log(res.data);
+    return res.data; // Dữ liệu user trả về từ BE
+  } catch (error) {
+    console.error("Get User error:", error);
+    throw error;
+  }
+}
 
 export const uploadAvatar = async (userId: any,formData: FormData) => {
   try {
