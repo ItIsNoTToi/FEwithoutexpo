@@ -9,13 +9,13 @@ export type ChatMessage = {
   loading?: boolean;  // <-- thêm
 };
 
-const storageKey = (userId: string, lessonId: string) =>
+export const storageKey = (userId: string, lessonId: string) =>
   `chatlog:${userId}:${lessonId}`;
 
 // helper: luôn lưu cache cùng format {role, content}
 async function saveCache(userId: string, lessonId: string, msgs: ChatMessage[]) {
   await AsyncStorage.setItem(
-    storageKey(userId, lessonId),
+    await storageKey(userId, lessonId),
     JSON.stringify(
       msgs.map((m) => ({
         role: m.from,
@@ -23,10 +23,6 @@ async function saveCache(userId: string, lessonId: string, msgs: ChatMessage[]) 
       }))
     )
   );
-}
-
-export const clearChatlogCache = async (userId: string, lessonId: string) => {
-  await AsyncStorage.removeItem(storageKey(userId, lessonId));
 }
 
 export function useChatlog(userId?: string, lessonId?: string) {

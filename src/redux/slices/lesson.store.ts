@@ -1,7 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import Lesson from "../../models/lesson";
 
-
 interface LessonState {
   selectedLesson: Lesson | null;
   history: Lesson[];
@@ -19,8 +18,12 @@ const lessonSlice = createSlice({
     setLesson: (state, action: PayloadAction<Lesson>) => {
       state.selectedLesson = action.payload;
     },
+    resetLesson: (state) => {
+      state.selectedLesson = null;
+      state.history = [];
+    },
   },
 });
 
-export const { setLesson } = lessonSlice.actions;
+export const { setLesson, resetLesson } = lessonSlice.actions;
 export default lessonSlice.reducer;

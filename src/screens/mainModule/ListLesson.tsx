@@ -15,7 +15,6 @@ import { getUser } from "../../services/api/user.services";
 import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { LessonStackParamList } from '../../navigation/AppStack';
-import { retakeLessonApi } from "../../services/api/AI.services";
 
 type Props = NativeStackScreenProps<LessonStackParamList, 'ListLesson'>;
 
@@ -63,7 +62,6 @@ export default function ListLesson({ navigation }: Props) {
           text: "Đồng ý",
           onPress: async () => {
             try {
-              await retakeLessonApi(user?._id, lesson._id);
               fetchProgressApi(user?._id).then((data) => setProgresses(data.data));
               goToLesson(lesson, lesson.type, true);
             } catch (err) {

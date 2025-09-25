@@ -1,7 +1,6 @@
 import axiosInstance from "../../config/axiosconfig";
 import Config from "react-native-config";
 import EventSource from "react-native-sse";
-import { clearChatlogCache } from "../../hooks/useChatlog";
 
 const URL_API = Config.URL_API;
 
@@ -56,7 +55,7 @@ export const fetchAIStream = (
 
 export const startLessonAI = async (userId: any, lessonId: any, type: any) => {
     try {
-      // console.log(type, userId, lessonId);
+      console.log(type, userId, lessonId);
       const response = await axiosInstance.post('/api/ai/start',{
           userId: userId, 
           lessonId: lessonId,
@@ -83,6 +82,7 @@ export const EndLessonAI = async (userId: any, lessonId: any) => {
 
 export const PauseLessonAI = async (userId: any, lessonId: any) => {
   try {
+    console.log(userId, lessonId);
         const response = await axiosInstance.post('/api/ai/pause',{
             userId: userId, 
             lessonId: lessonId 
@@ -93,20 +93,19 @@ export const PauseLessonAI = async (userId: any, lessonId: any) => {
     }
 }
 
+// services/api/AI.services.ts
 export const retakeLessonApi = async (userId: any, lessonId: any) => {
-  try {
-    const response = await axiosInstance.post('/api/ai/pause', {
-      userId: userId, 
-      lessonId: lessonId,
-    });
+  if (!userId || !lessonId) return;
 
-    await clearChatlogCache(userId, lessonId);
+  const response = await axiosInstance.post("/api/ai/retake", {
+    userId,
+    lessonId,
+  });
 
-    return response.data;
-  } catch (error: any) {
-    throw new Error(error.message);
+  if(response.data.success){
+    return;
   }
-}
+};
 
 export const getRandomTitle = async () => {
   try {

@@ -12,7 +12,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../redux/store";
 import { useChatlog } from "../../hooks/useChatlog";
-import { startLessonAI, EndLessonAI, PauseLessonAI, fetchAIStream } from "../../services/api/AI.services";
+import { startLessonAI, EndLessonAI, PauseLessonAI, fetchAIStream, retakeLessonApi } from "../../services/api/AI.services";
 import { getUser } from "../../services/api/user.services";
 import User from "../../models/user";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -23,6 +23,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import Voice from '@react-native-community/voice';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import LoadingSpinner from "../../features/LoadingSpinner";
+import { useResetChatlog } from "../../hooks/useResetChatlog";
 
 type Mode = "idle" | "record" | "keyboard";
 type Props = NativeStackScreenProps<LessonStackParamList, 'ListenChat'>;
@@ -41,6 +42,7 @@ export default function ListenChat({ route, navigation }: Props) {
   const selectedLesson = useSelector((s: RootState) => s?.lesson.selectedLesson);
   const [user, setUser] = useState<User>();
   const [userId, setUserId] = useState<string>("");
+  const [lessonId, setlessonId] = useState<string>(selectedLesson!._id);
   const [userInput, setUserInput] = useState('');
   const [content, setContent] = useState('');
   const [contentVisible, setContentVisible] = useState(false);
@@ -49,6 +51,7 @@ export default function ListenChat({ route, navigation }: Props) {
   const [lessonEnded, setLessonEnded] = useState(false);
   const [mode, setMode] = useState<Mode>("idle");
   const { data: messages = [], appendMessage, patchLastAIMessage } = useChatlog(userId, selectedLesson?._id);
+  const { resetChatlog } = useResetChatlog();
   const lessonStarted = useRef(false);
   const [loading, setLoading] = useState(false);
   const [recognized, setRecognized] = useState("");
@@ -69,8 +72,19 @@ export default function ListenChat({ route, navigation }: Props) {
   }, []);
 
   useEffect(() => {
-    if (resetCache) AsyncStorage.removeItem(`chatlog:${userId}:${selectedLesson?._id}`);
-  }, [resetCache, user, selectedLesson]);
+    if (resetCache) {
+      Promise.all([
+        resetChatlog(userId, lessonId),
+        retakeLessonApi(userId, lessonId),
+      ])
+        .then(() => {
+          console.log("Reset xong, gọi API retake xong");
+        })
+        .catch((err) => {
+          console.error("Lỗi khi reset/retake:", err);
+        });
+    }
+  }, [resetCache, userId, lessonId]);
   
   useEffect(() => {
     Voice.onSpeechStart = (e: Event) => {

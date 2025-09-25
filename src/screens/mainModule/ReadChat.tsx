@@ -9,10 +9,10 @@ import {
   Animated
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "../../redux/store";
 import { useChatlog } from "../../hooks/useChatlog";
-import { startLessonAI, EndLessonAI, PauseLessonAI, fetchAIStream } from "../../services/api/AI.services";
+import { startLessonAI, EndLessonAI, PauseLessonAI, fetchAIStream, retakeLessonApi } from "../../services/api/AI.services";
 import { getUser } from "../../services/api/user.services";
 import User from "../../models/user";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -23,6 +23,8 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import Voice from '@react-native-community/voice';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import LoadingSpinner from "../../features/LoadingSpinner";
+import { useResetChatlog } from "../../hooks/useResetChatlog";
+import { resetLesson } from "../../redux/slices/lesson.store";
 
 type Mode = "idle" | "record" | "keyboard";
 type Props = NativeStackScreenProps<LessonStackParamList, 'ReadChat'>;
@@ -41,6 +43,7 @@ export default function ReadChat({ route, navigation }: Props) {
   const selectedLesson = useSelector((s: RootState) => s?.lesson.selectedLesson);
   const [user, setUser] = useState<User>();
   const [userId, setUserId] = useState<string>("");
+  const lessonId = selectedLesson?._id;
   const [userInput, setUserInput] = useState('');
   const [content, setContent] = useState('');
   const [contentVisible, setContentVisible] = useState(false);
@@ -49,6 +52,7 @@ export default function ReadChat({ route, navigation }: Props) {
   const [lessonEnded, setLessonEnded] = useState(false);
   const [mode, setMode] = useState<Mode>("idle");
   const { data: messages = [], appendMessage, patchLastAIMessage } = useChatlog(userId, selectedLesson?._id);
+  const { resetChatlog } = useResetChatlog();
   const lessonStarted = useRef(false);
   const [loading, setLoading] = useState(false);
   const [recognized, setRecognized] = useState("");
@@ -58,6 +62,7 @@ export default function ReadChat({ route, navigation }: Props) {
   const [started, setStarted] = useState("");
   const [results, setResults] = useState<string[]>([]);
   const [partialResults, setPartialResults] = useState<string[]>([]);
+  const dispatch = useDispatch();
 
   useEffect(() =>{
     getUser()
@@ -69,9 +74,21 @@ export default function ReadChat({ route, navigation }: Props) {
   }, []);
 
   useEffect(() => {
-    if (resetCache) AsyncStorage.removeItem(`chatlog:${userId}:${selectedLesson?._id}`);
-  }, [resetCache, user, selectedLesson]);
-  
+    if (resetCache && userId && lessonId ) {
+      Promise.all([
+        resetChatlog(userId, lessonId),
+        retakeLessonApi(userId, lessonId),
+      ])
+        .then(() => {
+          console.log("Reset xong, gọi API retake xong");
+          fetchstart();
+        })
+        .catch((err) => {
+          console.error("Lỗi khi reset/retake:", err);
+        });
+    }
+  }, [resetCache, userId, lessonId]);
+
   useEffect(() => {
     Voice.onSpeechStart = (e: Event) => {
       console.log("onSpeechStart: ", e);
@@ -116,7 +133,7 @@ export default function ReadChat({ route, navigation }: Props) {
     };
   }, []);
 
-  const sendMessage  = async (text: string) =>{
+  const sendMessage = async (text: string) =>{
       setMode('idle');
       console.log(1);
       if (sending || !selectedLesson?._id || !userId) return;
@@ -203,23 +220,35 @@ export default function ReadChat({ route, navigation }: Props) {
     if (lessonStarted.current) return; // ngăn gọi lại
     lessonStarted.current = true;
     (async () => {
-      try {
-        setLoading(true);
-        const d = await startLessonAI(userId, selectedLesson._id, type);
-        setContent(d.content);
-        Alert.alert("Info", d.message);
-        console.log(1);
-        appendMessage({ from: "system", text: d.firstQuestion });
-        speak(d.firstQuestion);
-        console.log(2);
-        setLoading(false);
-      } catch (err) {
-        console.error(err);
-        console.log(3);
-        setLoading(false);
-      }
+      fetchstart();
     })();
   }, [user, selectedLesson, type]);
+
+  const fetchstart = async () => {
+    try {
+      setLoading(true);
+      const d = await startLessonAI(userId, lessonId, type);
+      setContent(d.content);
+      Alert.alert("Info", d.message);
+      console.log(1);
+      appendMessage({ from: "system", text: d.firstQuestion });
+      speak(d.firstQuestion);
+      console.log(2);
+      setLoading(false);
+    } catch (err: any) {
+      if (err.response) {
+        // Server có trả về response (có status code)
+        console.error("❌ API Error:", err.response.status, err.response.data);
+      } else if (err.request) {
+        // Request đã gửi đi nhưng không có phản hồi
+        console.error("❌ No response from server:", err.request);
+      } else {
+        // Lỗi xảy ra trước khi gửi request
+        console.error("❌ Request setup error:", err.message);
+      }
+      setLoading(false);
+    }
+  }
 
   // Confirm before leaving
   useEffect(() => {
@@ -236,7 +265,9 @@ export default function ReadChat({ route, navigation }: Props) {
             Tts.stop();
             try {
               await PauseLessonAI(userId, selectedLesson?._id)
-                .then(d => Alert.alert("Info", d.message))
+                .then(d => {
+                  Alert.alert("Info", d.message);
+                })
                 .catch(console.error);
             } catch (err) {
               console.error("Failed to Pause lesson:", err);
@@ -262,7 +293,9 @@ export default function ReadChat({ route, navigation }: Props) {
 
           try {
             await EndLessonAI(userId, selectedLesson._id)
-              .then(d => Alert.alert("Info", d.message))
+              .then(d => {
+                Alert.alert("Info", d.message)
+              })
               .catch(console.error);
           } catch (err) {
             console.error("Failed to finish lesson:", err);
@@ -317,6 +350,9 @@ export default function ReadChat({ route, navigation }: Props) {
 
   if (!selectedLesson) return <Text style={styles.centerText}>No lesson selected</Text>;
   if(!user) return <Text style={styles.centerText}>Loading user...</Text>;
+  if(messages){
+    console.log(messages);
+  }
   if (loading === true ) return <Text style={styles.centerText}>Loading lesson...</Text>;
   else
   return ( 
@@ -458,7 +494,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0b0c2a', // galaxy dark background
   },
   innerContainer: { flex: 1 },
-  centerText: { flex: 1, textAlign: "center", textAlignVertical: "center", fontSize: 18, color: "#fff" },
+  centerText: { flex: 1, textAlign: "center", textAlignVertical: "center", fontSize: 18, color: "#000000ff" },
 
   title: { 
     fontSize: 22, 
