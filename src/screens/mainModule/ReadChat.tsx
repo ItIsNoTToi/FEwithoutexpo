@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-// screens/LearningWithAI.tsx
+// screens/LearningWithAI/reading.tsx
 import React, { useEffect, useRef, useState } from "react";
 import {
   View, Text, TouchableOpacity, StyleSheet,
@@ -21,20 +21,12 @@ import { getStatusBarHeight } from "react-native-status-bar-height";
 import Tts from 'react-native-tts';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Voice from '@react-native-community/voice';
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import LoadingSpinner from "../../features/LoadingSpinner";
 import { useResetChatlog } from "../../hooks/useResetChatlog";
-import { resetLesson } from "../../redux/slices/lesson.store";
+import { speak } from "../../services/api/speak.services";
 
 type Mode = "idle" | "record" | "keyboard";
 type Props = NativeStackScreenProps<LessonStackParamList, 'ReadChat'>;
-
-Tts.setDefaultLanguage('en-US');
-async function speak(text: string) {
-  Tts.stop();
-  Tts.setDefaultRate(0.25);
-  Tts.speak(text); 
-}
 
 export default function ReadChat({ route, navigation }: Props) {
   const { type, resetCache } = route.params;
@@ -62,7 +54,6 @@ export default function ReadChat({ route, navigation }: Props) {
   const [started, setStarted] = useState("");
   const [results, setResults] = useState<string[]>([]);
   const [partialResults, setPartialResults] = useState<string[]>([]);
-  const dispatch = useDispatch();
 
   useEffect(() =>{
     getUser()

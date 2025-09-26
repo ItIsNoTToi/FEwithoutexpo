@@ -6,7 +6,7 @@ const URL_API = Config.URL_API;
 console.log("🔗 URL_API from .env:", URL_API);
 const axiosInstance = axios.create({
   baseURL: URL_API, 
-  timeout: 60000, // Set a timeout of 10 seconds
+  timeout: 0,
 });
 
 axiosInstance.interceptors.request.use(async (config) => {

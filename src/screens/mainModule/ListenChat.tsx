@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-shadow */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-// screens/LearningWithAI.tsx
+// screens/LearningWithAI/listen.tsx
 import React, { useEffect, useRef, useState } from "react";
 import {
   View, Text, TouchableOpacity, StyleSheet,
@@ -21,19 +22,12 @@ import { getStatusBarHeight } from "react-native-status-bar-height";
 import Tts from 'react-native-tts';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Voice from '@react-native-community/voice';
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import LoadingSpinner from "../../features/LoadingSpinner";
 import { useResetChatlog } from "../../hooks/useResetChatlog";
+import { speak } from "../../services/api/speak.services";
 
 type Mode = "idle" | "record" | "keyboard";
 type Props = NativeStackScreenProps<LessonStackParamList, 'ListenChat'>;
-
-Tts.setDefaultLanguage('en-US');
-async function speak(text: string) {
-  Tts.stop();
-  Tts.setDefaultRate(0.25);
-  Tts.speak(text); 
-}
 
 export default function ListenChat({ route, navigation }: Props) {
   const { type, resetCache } = route.params;
@@ -54,6 +48,7 @@ export default function ListenChat({ route, navigation }: Props) {
   const { resetChatlog } = useResetChatlog();
   const lessonStarted = useRef(false);
   const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState(false);
   const [recognized, setRecognized] = useState("");
   const [pitch, setPitch] = useState<number>(0);
   const [error, setError] = useState("");
@@ -327,6 +322,16 @@ export default function ListenChat({ route, navigation }: Props) {
     }
   };
 
+  const playAudio = async (content: any, status: boolean)=> {
+    if(status){
+      setStatus(true);
+      speak(content);
+    }else{
+      setStatus(false);
+      Tts.stop();
+    }
+  }
+
   if (!selectedLesson) return <Text style={styles.centerText}>No lesson selected</Text>;
   if(!user) return <Text style={styles.centerText}>Loading user...</Text>;
   if (loading === true ) return <Text style={styles.centerText}>Loading lesson...</Text>;
@@ -352,6 +357,19 @@ export default function ListenChat({ route, navigation }: Props) {
             <Text style={styles.contentText}>{content}</Text>
           </ScrollView>
         )}
+        
+        {
+          status ? 
+            <TouchableOpacity onPress={() => playAudio(content, false)}>
+              <Ionicons name="pause" size={26} color="#dd3131ff" />
+            </TouchableOpacity>
+          :
+            <TouchableOpacity onPress={() => playAudio(content, true)}>
+              <Ionicons name="play" size={26} color="#dd3131ff" />
+            </TouchableOpacity>
+        }
+        
+
 
         {/* Chat messages */}
         <FlatList
