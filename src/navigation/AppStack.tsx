@@ -8,6 +8,7 @@ import { getFocusedRouteNameFromRoute } from "@react-navigation/native";
 // screens
 import HomeScreen from '../screens/index';
 import ProfileScreen from '../screens/ProfileScreen';
+import SocialScreen from '../screens/SocialScreen';
 import RankingScreen from '../screens/Extends/RankingScreen';
 import VocabularyPage from '../screens/Extends/Vocabulary';
 
@@ -79,7 +80,7 @@ function MainTabs() {
             routeName === "ReadChat"
           ) {
             return {
-              title: "Chat with AI",
+              title: "Learn with AI",
               tabBarStyle: { display: "none" },
               tabBarIcon: ({ color, size }) => (
                 <FontAwesomeIcon icon={faRobot as IconProp} color={color} size={size} />
@@ -88,21 +89,11 @@ function MainTabs() {
           }
 
           return {
-            title: "Chat with AI",
+            title: "Learn with AI",
             tabBarIcon: ({ color, size }) => (
               <FontAwesomeIcon icon={faRobot as IconProp} color={color} size={size} />
             ),
           };
-        }}
-      />
-      <Tab.Screen
-        name="FixSentence"
-        component={fixSentence}
-        options={{
-          title: 'Fix Sentence',
-          tabBarIcon: ({ color, size }) => (
-            <FontAwesomeIcon icon={faPen as IconProp} color={color} size={size as number} />
-          ),
         }}
       />
       <Tab.Screen
@@ -112,6 +103,16 @@ function MainTabs() {
           title: 'Competition',
           tabBarIcon: ({ color, size }) => (
             <FontAwesomeIcon icon={faTrophy as IconProp} color={color} size={size as number} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Social"
+        component={SocialScreen}
+        options={{
+          title: 'Social',
+          tabBarIcon: ({ color, size }) => (
+            <FontAwesomeIcon icon={faUser as IconProp} color={color} size={size as number} />
           ),
         }}
       />
@@ -173,6 +174,14 @@ export default function AppNavigation() {
         name="Ranking"
         component={RankingScreen}
         options={{ title: 'Ranking', headerShown: false }}
+      />
+      <Stack.Screen
+        name="FixSentence"
+        component={fixSentence}
+        options={{
+          title: 'Fix Sentence',
+          headerShown: false
+        }}
       />
     </Stack.Navigator>
   );

@@ -25,6 +25,7 @@ export const getUser = async () => {
 
     return res.data; // Dữ liệu user trả về từ BE
   } catch (error) {
+    await logout_fe();
     console.error("Get User error:", error);
     throw error;
   }
@@ -65,7 +66,7 @@ export const uploadAvatar = async (userId: any,formData: FormData) => {
       data: formData,
     });
     if (res.status === 200) {
-      const data = res.data;
+      const data: any = res.data;
       if (data.success) {
         return data;
       }

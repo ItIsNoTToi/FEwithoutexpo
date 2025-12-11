@@ -16,7 +16,7 @@ export default function HomeScreen({ navigation }: any) {
           <Text style={styles.subGreeting}>Welcome back to LearnE</Text>
         </View>
 
-        <Image source={require('../uploads/assets/ai-teacher.png')} style={styles.banner} />
+        <Image source={require('../uploads/assets/favicon.png')} style={styles.banner} />
 
         <Text style={styles.sectionTitle}>Start Learning</Text>
 
@@ -49,6 +49,19 @@ export default function HomeScreen({ navigation }: any) {
           <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('QuizTest')}>
             <Ionicons name="clipboard-outline" size={32} color="#f87171" />
             <Text style={styles.cardText}>Quiz Test</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('FixSentence')}>
+            <View style={{ flexDirection: 'row'}}>
+              <Ionicons name="book-outline" size={32} color="#72f4f2ff" />
+              <Ionicons name="pencil-outline" size={32} color="#72f4f2ff" />
+            </View>
+            <Text style={styles.cardText}>Fix Sentence</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('FixSentence')}>
+            <Ionicons name="play" size={32} color="#78d542ff" />
+            <Text style={styles.cardText}>Play game with friend</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

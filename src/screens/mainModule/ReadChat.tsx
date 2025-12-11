@@ -57,7 +57,7 @@ export default function ReadChat({ route, navigation }: Props) {
 
   useEffect(() =>{
     getUser()
-    .then(d => {
+    .then( (d: any) => {
         setUser(d.data);
         setUserId(d.data._id);
     })
@@ -218,7 +218,7 @@ export default function ReadChat({ route, navigation }: Props) {
   const fetchstart = async () => {
     try {
       setLoading(true);
-      const d = await startLessonAI(userId, lessonId, type);
+      const d: any = await startLessonAI(userId, lessonId, type);
       setContent(d.content);
       Alert.alert("Info", d.message);
       console.log(1);
@@ -256,7 +256,7 @@ export default function ReadChat({ route, navigation }: Props) {
             Tts.stop();
             try {
               await PauseLessonAI(userId, selectedLesson?._id)
-                .then(d => {
+                .then((d: any) => {
                   Alert.alert("Info", d.message);
                 })
                 .catch(console.error);
@@ -284,7 +284,7 @@ export default function ReadChat({ route, navigation }: Props) {
 
           try {
             await EndLessonAI(userId, selectedLesson._id)
-              .then(d => {
+              .then((d: any) => {
                 Alert.alert("Info", d.message)
               })
               .catch(console.error);
