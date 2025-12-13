@@ -13,7 +13,7 @@ export const fetchLogin = async (Data: any, loginType: any): Promise<any> => {
     } else if(loginType === 'GG'){  
       // console.log(1);
       const {type, data} = await googleLogin();
-      // console.log(idToken, user)
+      // console.log(type, data)
       // console.log(2);
       const response = await axiosInstance.post("/api/login", {
         type: type, 
@@ -67,13 +67,12 @@ export const fetchLoginWithPhone = async (data: any, loginType: string): Promise
 };
 
 export const fetchRegister = async (userData: any): Promise<any> => {
-    try {
+    try { 
+        console.log(userData);
         const response = await axiosInstance.post('/api/register', {
             userData: userData
         });
 
-        // axios tự động throw lỗi nếu status >= 400
-        // nên không cần if (!response.ok) như fetch
         return response.data;
 
     } catch (error: any) {

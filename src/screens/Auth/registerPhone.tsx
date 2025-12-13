@@ -16,68 +16,52 @@ import { ScrollView } from 'react-native-gesture-handler';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { fetchRegister } from '../../services/api/auth.services';
 
-export default function Register({ navigation }: any) {
+export default function RegisterPhone({ navigation }: any) {
   const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [phone, setPhone] = useState('');
   const [dob, setDob] = useState(new Date());
   const [showDate, setShowDate] = useState(false);
 
   const [showClassModal, setShowClassModal] = useState(false);
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const passwordRegex =
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
+  const phoneRegex = /^(0|\+84)[0-9]{9}$/;
 
-  /* ================== STEP 1: VALIDATE FORM ================== */
+  /* ================== STEP 1: VALIDATE ================== */
   const handleRegister = () => {
-    if (!email || !password || !confirmPassword) {
-      Alert.alert('⚠️ Missing Information', 'Please fill all required fields');
+    if (!phone) {
+      Alert.alert('⚠️ Missing Phone', 'Please enter your phone number');
       return;
     }
 
-    if (!emailRegex.test(email)) {
-      Alert.alert('❌ Invalid Email', 'Please enter a valid email address');
+    if (!phoneRegex.test(phone)) {
+      Alert.alert('❌ Invalid Phone', 'Phone number is not valid');
       return;
     }
 
-    if (!passwordRegex.test(password)) {
-      Alert.alert(
-        '❌ Weak Password',
-        'Password must be at least 8 characters and include uppercase, lowercase, number and special character'
-      );
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      Alert.alert('❌ Password Mismatch', 'Passwords do not match');
-      return;
-    }
-
-    // ✅ OPEN CLASS SELECTION POPUP
+    // ✅ mở popup chọn class
     setShowClassModal(true);
   };
 
-  /* ================== STEP 2: SUBMIT REGISTER ================== */
+  /* ================== STEP 2: SUBMIT ================== */
   const submitRegister = async () => {
     if (!selectedClass) return;
 
     const userData = {
-      registerType: 'TK',
+      registerType: 'OTP',
       username: username.trim(),
-      email: email.trim(),
-      password,
+      phone: phone.trim(),
       warriorClass: selectedClass, // ⭐ GAME CORE
       dateOfBirth: dob.toISOString().split('T')[0],
     };
 
     try {
       const res = await fetchRegister(userData);
+
       if (res?.success) {
-        Alert.alert('🎉 Hero Created!', 'Your journey begins now');
-        navigation.replace('Login');
+        Alert.alert('🎉 Hero Created!', 'OTP has been sent to your phone');
+        // navigation.replace('OtpVerify', { phone });
+        navigation.navigate('Login');
       } else {
         Alert.alert('❌ Failed', res?.error || 'Register failed');
         navigation.navigate('Login');
@@ -106,7 +90,7 @@ export default function Register({ navigation }: any) {
 
           <Text style={styles.title}>Begin Your Journey</Text>
           <Text style={styles.subtitle}>
-            Forge your destiny with AI-powered learning
+            Awaken your destiny in the AI realm
           </Text>
 
           {/* USERNAME */}
@@ -118,14 +102,14 @@ export default function Register({ navigation }: any) {
             onChangeText={setUsername}
           />
 
-          {/* EMAIL */}
+          {/* PHONE */}
           <TextInput
             style={styles.input}
-            placeholder="Email"
+            placeholder="Phone Number"
             placeholderTextColor="#aaa"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
+            value={phone}
+            onChangeText={setPhone}
+            keyboardType="phone-pad"
           />
 
           {/* DOB */}
@@ -149,25 +133,6 @@ export default function Register({ navigation }: any) {
             />
           )}
 
-          {/* PASSWORD */}
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor="#aaa"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
-
-          <TextInput
-            style={styles.input}
-            placeholder="Confirm Password"
-            placeholderTextColor="#aaa"
-            secureTextEntry
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-          />
-
           {/* SUBMIT */}
           <TouchableOpacity style={styles.button} onPress={handleRegister}>
             <LinearGradient
@@ -184,9 +149,9 @@ export default function Register({ navigation }: any) {
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => navigation.navigate('RegisterPhone')}>
+          <TouchableOpacity onPress={() => navigation.navigate('Register')}>
             <Text style={styles.loginText}>
-              Reincarnation with phone number
+              Reincarnation with Email
             </Text>
           </TouchableOpacity>
         </ScrollView>
@@ -197,17 +162,17 @@ export default function Register({ navigation }: any) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
             <TouchableOpacity
-              style={styles.closeBtn}
-              onPress={() => {
+                style={styles.closeBtn}
+                onPress={() => {
                 setShowClassModal(false);
                 setSelectedClass(null);
-              }}
+                }}
             >
-              <Text style={styles.closeText}>✕</Text>
+                <Text style={styles.closeText}>✕</Text>
             </TouchableOpacity>
             <Text style={styles.modalTitle}>⚔️ Choose Your Class</Text>
 
-            {[
+            {[  
               { key: 'Listener Mage', label: 'Listener Mage 🎧' },
               { key: 'Speaker Warrior', label: 'Speaker Warrior 🗣️' },
               { key: 'Reader Rogue', label: 'Reader Rogue 📖' },
@@ -243,129 +208,129 @@ export default function Register({ navigation }: any) {
 
 /* ================== STYLES ================== */
 const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  logo: {
-    width: 110,
-    height: 110,
-    marginBottom: 16,
-    resizeMode: 'contain',
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#fff',
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#ccc',
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  input: {
-    width: '100%',
-    height: 48,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-    color: '#fff',
-  },
-  dateBox: {
-    width: '100%',
-    padding: 14,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    marginBottom: 14,
-  },
-  dateText: {
-    color: '#ddd',
-  },
-  button: {
-    width: '100%',
-    marginTop: 10,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  buttonInner: {
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 16,
-  },
-  loginText: {
-    marginTop: 20,
-    color: '#9ecbff',
-    textDecorationLine: 'underline',
-  },
-  /* MODAL */
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalBox: {
-    width: '85%',
-    backgroundColor: '#1f2933',
-    borderRadius: 16,
-    padding: 20,
-  },
-  modalTitle: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: '800',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  classItem: {
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#444',
-    marginBottom: 10,
-  },
-  classActive: {
-    borderColor: '#6a11cb',
-    backgroundColor: 'rgba(106,17,203,0.2)',
-  },
-  classText: {
-    color: '#fff',
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  confirmBtn: {
-    marginTop: 10,
-    backgroundColor: '#6a11cb',
-    paddingVertical: 14,
-    borderRadius: 12,
-  },
-  confirmText: {
-    color: '#fff',
-    fontWeight: '700',
-    textAlign: 'center',
-    fontSize: 16,
-  },
-  closeBtn: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    zIndex: 10,
-    padding: 6,
-  },
-  closeText: {
-    color: '#aaa',
-    fontSize: 20,
-    fontWeight: '700',
-  }
+    container: {
+        flexGrow: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24,
+    },
+    logo: {
+        width: 110,
+        height: 110,
+        marginBottom: 16,
+        resizeMode: 'contain',
+    },
+    title: {
+        fontSize: 26,
+        fontWeight: '800',
+        color: '#fff',
+        marginBottom: 6,
+    },
+    subtitle: {
+        fontSize: 14,
+        color: '#ccc',
+        marginBottom: 24,
+        textAlign: 'center',
+    },
+    input: {
+        width: '100%',
+        height: 48,
+        backgroundColor: 'rgba(255,255,255,0.12)',
+        borderRadius: 12,
+        paddingHorizontal: 14,
+        marginBottom: 14,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)',
+        color: '#fff',
+    },
+    dateBox: {
+        width: '100%',
+        padding: 14,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255,255,255,0.12)',
+        marginBottom: 14,
+    },
+    dateText: {
+        color: '#ddd',
+    },
+    button: {
+        width: '100%',
+        marginTop: 12,
+        borderRadius: 14,
+        overflow: 'hidden',
+    },
+    buttonInner: {
+        paddingVertical: 15,
+        alignItems: 'center',
+    },
+    buttonText: {
+        color: '#fff',
+        fontWeight: '700',
+        fontSize: 16,
+    },
+    loginText: {
+        marginTop: 20,
+        color: '#9ecbff',
+        textDecorationLine: 'underline',
+    },
+    /* MODAL */
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.65)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalBox: {
+        width: '85%',
+        backgroundColor: '#1f2933',
+        borderRadius: 16,
+        padding: 20,
+    },
+    modalTitle: {
+        color: '#fff',
+        fontSize: 20,
+        fontWeight: '800',
+        textAlign: 'center',
+        marginBottom: 16,
+    },
+    classItem: {
+        padding: 14,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#444',
+        marginBottom: 10,
+    },
+    classActive: {
+        borderColor: '#6a11cb',
+        backgroundColor: 'rgba(106,17,203,0.25)',
+    },
+    classText: {
+        color: '#fff',
+        fontSize: 16,
+        textAlign: 'center',
+    },
+    confirmBtn: {
+        marginTop: 10,
+        backgroundColor: '#6a11cb',
+        paddingVertical: 14,
+        borderRadius: 12,
+    },
+    confirmText: {
+        color: '#fff',
+        fontWeight: '700',
+        textAlign: 'center',
+        fontSize: 16,
+    },
+    closeBtn: {
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        zIndex: 10,
+        padding: 6,
+    },
+    closeText: {
+        color: '#aaa',
+        fontSize: 20,
+        fontWeight: '700',
+    }
 });

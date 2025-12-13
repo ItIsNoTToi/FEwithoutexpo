@@ -2,6 +2,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Login from '../screens/Auth/login';
 import Register from '../screens/Auth/register';
 import LoginWithPhone from '../screens/Auth/loginwithphone';
+import RegisterPhone from '../screens/Auth/registerPhone';
 
 const Stack = createNativeStackNavigator();
 
@@ -11,6 +12,7 @@ export default function AuthStack() {
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="LoginWithPhone" component={LoginWithPhone} />
       <Stack.Screen name="Register" component={Register} />
+      <Stack.Screen name="RegisterPhone" component={RegisterPhone} />
     </Stack.Navigator>
   );
 }

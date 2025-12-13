@@ -31,6 +31,7 @@ export default function ProfileScreen({ navigation }: any) {
       setLoading(true);
       const data = await getUser();
       setUser(data.data);
+      setUserDetail(data.data.UserDetail);
     } catch (err) {
       console.error("Lỗi load user:", err);
     } finally {
@@ -44,7 +45,8 @@ export default function ProfileScreen({ navigation }: any) {
 
   const logoutBtn = async () => {
     try {
-      const data = await logout_fe();
+      const type = user?.loginType;
+      const data = await logout_fe(type as string);
       if (data.success) {
         logout();
       } else {

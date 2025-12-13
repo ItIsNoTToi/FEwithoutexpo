@@ -1,7 +1,8 @@
+/* eslint-disable react/no-unstable-nested-components */
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faHome, faRobot, faUser, faTrophy, faPen } from '@fortawesome/free-solid-svg-icons';
+import { faHome, faRobot, faUser, faTrophy, } from '@fortawesome/free-solid-svg-icons';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import { getFocusedRouteNameFromRoute } from "@react-navigation/native";
 
@@ -25,7 +26,6 @@ import { Speak } from '../screens/4SkillAI/Speak';
 import { Listen } from '../screens/4SkillAI/Listen';
 import { fixSentence } from '../screens/fixSentence';
 
-
 export type QuizStackParamList = {
   QuizTopic: undefined;
   QuizTest: { quizId: string;};
@@ -44,8 +44,8 @@ export type TournamentStackParamList = {
 
 export type LessonStackParamList = {
   ListLesson: undefined;
-  ListenChat: { type: string, resetCache: boolean }
-  ReadChat: { type: string, resetCache: boolean }
+  ListenChat: { type: string, resetCache: boolean };
+  ReadChat: { type: string, resetCache: boolean };
 }
 
 const Tab = createBottomTabNavigator();

@@ -1,187 +1,233 @@
-import { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Image, TextInput, KeyboardAvoidingView } from 'react-native';
+import React, { useState } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  Image,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+} from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../../hooks/AuthContext';
 import { fetchLogin } from '../../services/api/auth.services';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Alert } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-
-export async function saveToken(token: string, userId: string) {
-  await AsyncStorage.setItem('userId', userId);
-  await AsyncStorage.setItem('authToken', token);
-}
 
 export default function Login({ navigation }: any) {
   const { login } = useAuth();
-  const [inputVisible, setInputVisible] = useState(false);
-  const [email, setEmail] = useState('giangvanhung2003@gmail.com');
-  const [password, setPassword] = useState('Hung123456@');
+  const [showForm, setShowForm] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-  const handleLogin = (type: String) => {
-    if (!inputVisible && type === 'TK') {
-      setInputVisible(true); // show input field
-    } else {
-      if (email && password) {
-        const data = {
-          email: email.trim(),
-          password: password.trim(),
-        }
-
-        fetchLogin(data, type)
-          .then((rpdata) => {
-            //console.log("Login successful:", data);
-            saveToken(rpdata.token, rpdata.user._id);
-             // Lưu userId để dùng sau
-            rpdata.success ? login() : Alert.alert('Login failed. Please check your credentials.');
-          })
-          .catch(error => {
-            console.error("Error:", error);
-            Alert.alert('Error:' + error);
-          })
-      }
-      else{
-        Alert.alert('Please enter both email and password.'); // simple validation
-      }
+  const handleLogin = (type: 'TK' | 'GG' | 'FB' | 'OTP' | 'Apple') => {
+    if (type === 'TK' && !showForm) {
+      setShowForm(true);
+      return;
     }
+
+    let data;
+    if (type === 'TK') {
+      if (!email || !password) {
+        Alert.alert('⚠️ Missing info', 'Please enter email & password');
+        return;
+      }
+
+      data = {
+        email: email.trim(),
+        password: password.trim(),
+      };
+    }
+
+    fetchLogin(data, type)
+      .then(res => {
+        res.success
+          ? login(res)
+          : Alert.alert('❌ Login failed', 'Invalid credentials');
+      })
+      .catch(err => {
+        console.error(err);
+        Alert.alert('🔥 Error', err.message || 'Something went wrong');
+      });
   };
 
   return (
-    <KeyboardAvoidingView behavior="padding" style={{flex: 1} as any}>
-      <View style={styles.container}>
-        <Image source={require('../../uploads/assets/logo.png')} style={styles.logo} />
-
-        <Text style={styles.title}>Welcome to LearnE</Text>
-        <Text style={styles.subtitle}>Learn English with AI – Smart, Fun, Personalized</Text>
-
-        {inputVisible && (
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
+    <LinearGradient
+      colors={['#0f2027', '#203a43', '#2c5364']}
+      style={{ flex: 1 } as any}
+    >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 } as any}
+      >
+        <View style={styles.container}>
+          {/* LOGO */}
+          <Image
+            source={require('../../uploads/assets/logo.png')}
+            style={styles.logo}
           />
-        )}
 
-        {inputVisible && (
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={true}
-            keyboardType="default"
-            autoCapitalize="none"
-          />
-        )}
+          <Text style={styles.title}>Welcome Back</Text>
+          <Text style={styles.subtitle}>
+            Learn English with AI – Smart & Personal
+          </Text>
 
-        <TouchableOpacity style={styles.loginButton} onPress={() => handleLogin('TK')}>
-          <Text style={styles.loginText}>Login with Email</Text>
-        </TouchableOpacity>
+          {/* CARD */}
+          <View style={styles.card}>
+            {showForm && (
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Email"
+                  placeholderTextColor="#aaa"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
 
-        <TouchableOpacity style={[styles.loginButton, 
-          { 
-            backgroundColor: "rgba(255, 255, 255, 1)", 
-            width: '30%',
-            borderRadius: 50, 
+                <TextInput
+                  style={styles.input}
+                  placeholder="Password"
+                  placeholderTextColor="#aaa"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                />
+              </>
+            )}
 
-          } as any]} onPress={() => handleLogin('GG')}>
-          <Ionicons name="logo-google" size={32} color="#fab915ff" />
-        </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.primaryBtn}
+              onPress={() => handleLogin('TK')}
+            >
+              <Text style={styles.primaryText}>
+                {showForm ? 'Login' : 'Login with Email'}
+              </Text>
+            </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => {}}>
-          <Text style={styles.forgotText}>Forgot Password?</Text>
-        </TouchableOpacity>
+            {/* GOOGLE */}
+            <View style={styles.socialRow}>
+              <TouchableOpacity
+                style={styles.googleBtn}
+                onPress={() => handleLogin('GG')}
+              >
+                <Ionicons name="logo-google" size={28} color="#fbbc05" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.googleBtn}
+                onPress={() => handleLogin('FB')}
+              >
+                <Ionicons name="logo-facebook" size={28} color="#0509fbff" />
+              </TouchableOpacity>
+            </View>
 
-        <Text style={styles.orText}>or</Text>
+            <TouchableOpacity>
+              <Text style={styles.forgot}>Forgot password?</Text>
+            </TouchableOpacity>
+          </View>
 
-        <TouchableOpacity onPress={() => navigation.navigate('LoginWithPhone')}>
-          <Text style={styles.registerText}>Login with Phone Number</Text>
-        </TouchableOpacity>
+          {/* FOOTER */}
+          <TouchableOpacity onPress={() => navigation.navigate('LoginWithPhone')}>
+            <Text style={styles.footerText}>
+              Login with phone number
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-          <Text style={styles.registerText}>Create a new account</Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+          <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+            <Text style={styles.footerText}>
+              Create a new account
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
 
+/* ================= STYLES ================= */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f6ff',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
   },
-  input: {
-    width: '100%',
-    height: 45,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 6,
-    color: 'black',
-    paddingHorizontal: 12,
-    marginBottom: 20,
-    backgroundColor: '#fff',
-  },
+
   logo: {
-    width: 100,
-    height: 100,
-    marginBottom: 24,
+    width: 110,
+    height: 110,
     resizeMode: 'contain',
-    borderRadius: 10,
-    borderColor: '#08091cff',
-    borderWidth: 1,
-    shadowColor: '#d11919ff ',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 5,
+    marginBottom: 12,
   },
+
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-    marginBottom: 8,
+    color: '#fff',
+    fontSize: 26,
+    fontWeight: '800',
   },
+
   subtitle: {
-    fontSize: 14,
-    color: '#555',
-    textAlign: 'center',
-    marginBottom: 32,
-    paddingHorizontal: 20,
+    color: '#cbd5e1',
+    marginBottom: 28,
   },
-  loginButton: {
-    backgroundColor: '#4f6ef7',
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 8,
-    marginBottom: 16,
+
+  card: {
     width: '100%',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 18,
+    padding: 20,
+    marginBottom: 24,
   },
-  forgotText: {
-    color: '#4f6ef7',
-    fontSize: 14,
-    marginBottom: 16,
-    textDecorationLine: 'underline',
+
+  input: {
+    height: 48,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    color: '#fff',
+    marginBottom: 14,
   },
-  loginText: {
+
+  primaryBtn: {
+    backgroundColor: '#6366f1',
+    paddingVertical: 14,
+    borderRadius: 14,
+    marginTop: 8,
+  },
+
+  primaryText: {
     color: '#fff',
     fontSize: 16,
+    fontWeight: '700',
     textAlign: 'center',
-    fontWeight: '600',
   },
-  orText: {
-    color: '#999',
-    fontSize: 14,
-    marginVertical: 8,
+
+  socialRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 16,
   },
-  registerText: {
-    color: '#4f6ef7',
-    fontSize: 15,
+
+  googleBtn: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  forgot: {
+    marginTop: 14,
+    color: '#9ecbff',
+    textAlign: 'center',
+  },
+
+  footerText: {
+    color: '#c7d2fe',
+    marginTop: 14,
     textDecorationLine: 'underline',
   },
 });

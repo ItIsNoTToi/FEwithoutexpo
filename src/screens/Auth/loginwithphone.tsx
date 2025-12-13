@@ -1,209 +1,229 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Image, TextInput, KeyboardAvoidingView, } from 'react-native';
+import React, { useState } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  Image,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+} from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../../hooks/AuthContext';
 import { fetchLoginWithPhone } from '../../services/api/auth.services';
-import { saveToken } from './login';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Alert } from 'react-native';
 
 export default function LoginWithPhone({ navigation }: any) {
   const { login } = useAuth();
-  const [inputVisible, setInputVisible] = useState(false);
-  const [phonecheckVisible, setPhoneCheckVisible] = useState(false);
-  const [status, setstatus] = useState(true);
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [phoneCode, setPhoneCode] = useState('');
 
-    useEffect(() => {
-        if(phoneNumber){
-            setPhoneCheckVisible(true);
-        }
-    }, [phoneNumber]);
+  const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
+  const [step, setStep] = useState<'PHONE' | 'OTP'>('PHONE');
+  const [loading, setLoading] = useState(false);
 
-    const sendCode = () => {
-        // services send code
-        setstatus(false);
+  const phoneRegex = /^(0|\+84)[0-9]{9}$/;
 
+  /* ===== SEND OTP ===== */
+  const sendOtp = () => {
+    if (!phoneRegex.test(phone)) {
+      Alert.alert('❌ Invalid phone number');
+      return;
     }
 
-    const handlecheck = () => {
-        if(phoneCode && phoneNumber){
-            if( phoneCode === '1234'){
-                handleLogin();
-                return;
-            } else {
-                Alert.alert('error code');
-                return;
-            }
-        }
-        Alert.alert('Please enter the code');
+    // 🔥 sau này gọi API send OTP
+    setStep('OTP');
+    Alert.alert('📩 OTP Sent', 'Your code is 1234 (demo)');
+  };
+
+  /* ===== VERIFY OTP & LOGIN ===== */
+  const verifyOtp = async () => {
+    if (!otp) {
+      Alert.alert('⚠️ Missing OTP');
+      return;
     }
 
-    const handleLogin = () => {
-        if (!inputVisible) {
-            setInputVisible(true); // show input field
-        } else {
-            if (phoneNumber) {
-                const data = {
-                    phoneNumber: phoneNumber.trim(),
-                }
+    if (otp !== '1234') {
+      Alert.alert('❌ Invalid OTP');
+      return;
+    }
 
-                fetchLoginWithPhone(data, 'OTP')
-                .then(rpdata => {
-                    // console.log("Login successful:", data);
-                    saveToken(rpdata.token, rpdata.user._id);
-                    // console.log(data.user);
-                    AsyncStorage.setItem('userId', rpdata.user._id);
-                    rpdata.success ? login() : Alert.alert('Login failed. Please check your credentials.');
-                })
-                .catch(error => {
-                    console.error("Error:", error);
-                    Alert.alert('Error:' + error);
-                })
-            }
-            else{
-                Alert.alert('Please enter phone number'); // simple validation
-            }
-        }   
-    };
+    try {
+      setLoading(true);
+
+      const res = await fetchLoginWithPhone(
+        { phoneNumber: phone.trim() },
+        'OTP'
+      );
+
+      res.success
+        ? login(res)
+        : Alert.alert('❌ Login failed');
+    } catch (err: any) {
+      Alert.alert('🔥 Error', err.message || 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <KeyboardAvoidingView behavior="padding" style={{flex: 1} as any}>
-      <View style={styles.container}>
-          <Image source={require('../../uploads/assets/logo.png')} style={styles.logo} />
+    <LinearGradient
+      colors={['#0f2027', '#203a43', '#2c5364']}
+      style={{ flex: 1 } as any}
+    >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 } as any}
+      >
+        <View style={styles.container}>
+          {/* LOGO */}
+          <Image
+            source={require('../../uploads/assets/logo.png')}
+            style={styles.logo}
+          />
 
-          <Text style={styles.title}>Welcome to LearnE</Text>
-          <Text style={styles.subtitle}>Learn English with AI – Smart, Fun, Personalized</Text>
+          <Text style={styles.title}>Login with Phone</Text>
+          <Text style={styles.subtitle}>
+            Secure OTP authentication
+          </Text>
 
-          {inputVisible && (
-              <TextInput
-              style={styles.input}
-              placeholder="Phone number"
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
-              keyboardType="phone-pad"
-              autoCapitalize="none"
-              />
-          )}
+          {/* CARD */}
+          <View style={styles.card}>
+            {step === 'PHONE' && (
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Phone number"
+                  placeholderTextColor="#aaa"
+                  keyboardType="phone-pad"
+                  value={phone}
+                  onChangeText={setPhone}
+                />
 
-          {phonecheckVisible && (
-              status ? (
-                  <View style={{ flexDirection: 'row' } as any}>
-                  <TouchableOpacity style={styles.checkButton} onPress={sendCode}>
-                      <Text style={styles.checkText}>send code</Text>
-                  </TouchableOpacity>
-                  </View>
-              ) : (
-                  <View style={{ flexDirection: 'row' } as any}>
-                  <TextInput
-                      style={{ ...styles.input, width: '60%', marginRight: 12 } as any}
-                      placeholder="Phone Code"
-                      value={phoneCode}
-                      onChangeText={setPhoneCode}
-                      keyboardType="number-pad"
-                      autoCapitalize="none"
-                  />
-                  <TouchableOpacity style={styles.checkButton} onPress={handlecheck}>
-                      <Text style={styles.checkText}>Check</Text>
-                  </TouchableOpacity>
-                  </View>
-              )
-          )}
+                <TouchableOpacity
+                  style={styles.primaryBtn}
+                  onPress={sendOtp}
+                >
+                  <Text style={styles.primaryText}>Send OTP</Text>
+                </TouchableOpacity>
+              </>
+            )}
 
+            {step === 'OTP' && (
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter OTP"
+                  placeholderTextColor="#aaa"
+                  keyboardType="number-pad"
+                  value={otp}
+                  onChangeText={setOtp}
+                />
 
-        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-          <Text style={styles.loginText}>Login with Phone Number</Text>
-        </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.primaryBtn,
+                    loading && { opacity: 0.6 } as any,
+                  ]}
+                  disabled={loading}
+                  onPress={verifyOtp}
+                >
+                  <Text style={styles.primaryText}>
+                    {loading ? 'Verifying...' : 'Verify & Login'}
+                  </Text>
+                </TouchableOpacity>
 
-        <Text style={styles.orText}>or</Text>
+                <TouchableOpacity onPress={() => setStep('PHONE')}>
+                  <Text style={styles.backText}>← Change phone number</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
 
-        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-          <Text style={styles.registerText}>Login with Email</Text>
-        </TouchableOpacity>
+          {/* FOOTER */}
+          <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+            <Text style={styles.footerText}>
+              Login with Email
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-          <Text style={styles.registerText}>Create a new account</Text>
-        </TouchableOpacity>
-      </View>  
-    </KeyboardAvoidingView>
+          <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+            <Text style={styles.footerText}>
+              Create a new account
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
 
+/* ================= STYLES ================= */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f6ff',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
   },
-  input: {
-    width: '100%',
-    height: 45,
-    color: 'black',
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 6,
-    paddingHorizontal: 12,
-    marginBottom: 20,
-    backgroundColor: '#fff',
-  },
+
   logo: {
-    width: 100,
-    height: 100,
-    marginBottom: 24,
+    width: 110,
+    height: 110,
     resizeMode: 'contain',
+    marginBottom: 14,
   },
+
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-    marginBottom: 8,
+    color: '#fff',
+    fontSize: 26,
+    fontWeight: '800',
   },
+
   subtitle: {
-    fontSize: 14,
-    color: '#555',
-    textAlign: 'center',
-    marginBottom: 32,
-    paddingHorizontal: 20,
+    color: '#cbd5e1',
+    marginBottom: 26,
   },
-  loginButton: {
-    backgroundColor: '#4f6ef7',
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 8,
-    marginBottom: 16,
+
+  card: {
     width: '100%',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 18,
+    padding: 20,
+    marginBottom: 24,
   },
-  loginText: {
+
+  input: {
+    height: 48,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    color: '#fff',
+    marginBottom: 14,
+  },
+
+  primaryBtn: {
+    backgroundColor: '#22c55e',
+    paddingVertical: 14,
+    borderRadius: 14,
+  },
+
+  primaryText: {
     color: '#fff',
     fontSize: 16,
+    fontWeight: '700',
     textAlign: 'center',
-    fontWeight: '600',
   },
-  checkButton: {
-    backgroundColor: '#4f6ef7',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-    width: '35%',
-    height: 44,
-  },
-  checkText: {
-    color: '#fff',
-    fontSize: 16,
+
+  backText: {
+    marginTop: 12,
+    color: '#9ecbff',
     textAlign: 'center',
-    fontWeight: '600',
   },
-  orText: {
-    color: '#999',
-    fontSize: 14,
-    marginVertical: 8,
-  },
-  registerText: {
-    color: '#4f6ef7',
-    fontSize: 15,
+
+  footerText: {
+    color: '#c7d2fe',
+    marginTop: 14,
     textDecorationLine: 'underline',
   },
 });

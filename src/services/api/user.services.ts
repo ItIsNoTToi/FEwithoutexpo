@@ -1,8 +1,12 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "../../config/axiosconfig";
 import { clearAICache } from "../aiCache";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
+
+let cachedUser: any = null;
 
 export const getUser = async () => {
+  if(cachedUser) return cachedUser;
   try {
     // Lấy token đã lưu sau khi login
     const token = await AsyncStorage.getItem("authToken");
@@ -25,18 +29,22 @@ export const getUser = async () => {
 
     return res.data; // Dữ liệu user trả về từ BE
   } catch (error) {
-    await logout_fe();
     console.error("Get User error:", error);
     throw error;
   }
 };
 
-export const logout_fe = async () => {
-  // FE (mobile/web)
+export const logout_fe = async (type: string) => {
   await AsyncStorage.removeItem("authToken");
-  await clearAICache();
   await AsyncStorage.removeItem("userId");
-  await AsyncStorage.removeItem("chatlog"); // nếu bạn lưu chatlog ở local
+  await AsyncStorage.removeItem("chatlog");
+  await clearAICache();
+
+  if(type === "GG"){
+    await GoogleSignin.revokeAccess();
+    await GoogleSignin.signOut();
+  }
+
   const response = await axios.post('/admin/logout-fe');
   return response.data;
 }
@@ -44,34 +52,23 @@ export const logout_fe = async () => {
 export const SaveUser = async (data: any) => {
   try {
     const token = await AsyncStorage.getItem("authToken");
-    if (!token) {
-      throw new Error("No token found");
-    }
-    console.log("Saving user with data:", data);
+    if (!token) throw new Error("No token found");
 
-    const res = await axios.put(`/api/update/User/${data._id}`, {
-      data: data,
-    });
-    // console.log(res.data);
-    return res.data; // Dữ liệu user trả về từ BE
+    const res = await axios.put(`/api/update/User/${data._id}`, { data: data });
+    return res.data;
   } catch (error) {
-    console.error("Get User error:", error);
+    console.error("Save User error:", error);
     throw error;
   }
 }
 
-export const uploadAvatar = async (userId: any,formData: FormData) => {
+export const uploadAvatar = async (userId: any, formData: FormData) => {
   try {
-    const res = await axios.post(`/api/avatar/${userId}`,{
-      data: formData,
+    const res = await axios.post(`/api/avatar/${userId}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
     });
-    if (res.status === 200) {
-      const data: any = res.data;
-      if (data.success) {
-        return data;
-      }
-    }
+    if (res.status === 200 && res.data.success) return res.data;
   } catch (error) {
-    console.error(error);
+    console.error("Upload avatar error:", error);
   }
 }

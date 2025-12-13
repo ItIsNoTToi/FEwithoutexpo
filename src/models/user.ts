@@ -13,5 +13,5 @@ export default interface User {
   UserDetail?: UserDetail; // populate kèm UserDetail
   googleId: string,
   facebookId: string,
-  loginType: "TK" | "GG" |"FB"
+  loginType: "TK" | "GG" | "FB" | "OTP" | "Apple"
 }

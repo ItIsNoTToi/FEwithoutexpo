@@ -23,16 +23,9 @@ export default function App() {
       GoogleSignin.configure({
         webClientId:  webClientId || "103691827916-1rl93kahvml0mtfm973q7s5ihkj2ttmi.apps.googleusercontent.com",
         scopes: [
-          'https://www.googleapis.com/auth/drive.readonly',
+          'profile', 'email'
         ],
-        offlineAccess: false, 
-        hostedDomain: '', 
-        forceCodeForRefreshToken: false, 
-        accountName: '', 
-        iosClientId: '<FROM DEVELOPER CONSOLE>',
-        googleServicePlistPath: '', 
-        openIdRealm: '', 
-        profileImageSize: 120, 
+        offlineAccess: false
       });
       // console.log(webClientId);
       // console.log('dayne');
