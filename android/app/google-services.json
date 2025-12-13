@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "103691827916",
+    "project_id": "learne-eb047",
+    "storage_bucket": "learne-eb047.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:103691827916:android:56aee3be87059fb7332069",
+        "android_client_info": {
+          "package_name": "com.awesomeproject"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "103691827916-k5soktp5p3inp7mrppu9avk56ba0ue9p.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.awesomeproject",
+            "certificate_hash": "a174595fd04a15caf21262bc3d08675b46f41ee1"
+          }
+        },
+        {
+          "client_id": "103691827916-1rl93kahvml0mtfm973q7s5ihkj2ttmi.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAtGpN-3qWiJgWHAB63RLNpJqIm4HkuU40"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "103691827916-1rl93kahvml0mtfm973q7s5ihkj2ttmi.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

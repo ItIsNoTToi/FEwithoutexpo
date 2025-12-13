@@ -6,24 +6,44 @@ import { store } from './src/redux/store';
 import { Provider } from 'react-redux';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-
 import { checkOS, checkNetwork } from './src/utils/deviceCheck';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import Config from "react-native-config";
 
 const queryClient = new QueryClient();
+const webClientId = Config.webClientId;
 
 export default function App() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const init = async () => {
-      // ✅ Check OS
+      // 🔹 Setup Google Sign-In
+      // console.log(1);
+      GoogleSignin.configure({
+        webClientId:  webClientId || "103691827916-1rl93kahvml0mtfm973q7s5ihkj2ttmi.apps.googleusercontent.com",
+        scopes: [
+          'https://www.googleapis.com/auth/drive.readonly',
+        ],
+        offlineAccess: false, 
+        hostedDomain: '', 
+        forceCodeForRefreshToken: false, 
+        accountName: '', 
+        iosClientId: '<FROM DEVELOPER CONSOLE>',
+        googleServicePlistPath: '', 
+        openIdRealm: '', 
+        profileImageSize: 120, 
+      });
+      // console.log(webClientId);
+      // console.log('dayne');
+      // 🔹 Check OS
       const { os, version } = checkOS();
       if (os === 'android' && parseInt(version, 10) < 10) {
         Alert.alert("Ứng dụng cần Android 10+");
-        return; // dừng app hoặc điều hướng tới 1 màn hình khác
+        return;
       }
 
-      // ✅ Check network
+      // 🔹 Check network
       const online = await checkNetwork();
       if (!online) {
         Alert.alert("Không có kết nối internet");

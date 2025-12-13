@@ -3,7 +3,7 @@ import Config from "react-native-config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const URL_API = Config.URL_API;
-console.log("🔗 URL_API from .env:", URL_API);
+// console.log("🔗 URL_API from .env:", URL_API);
 const axiosInstance = axios.create({
   baseURL: URL_API, 
   timeout: 0,

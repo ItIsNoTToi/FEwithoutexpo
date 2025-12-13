@@ -1,4 +1,3 @@
-import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { getStatusBarHeight } from 'react-native-status-bar-height';
@@ -52,7 +51,7 @@ export default function HomeScreen({ navigation }: any) {
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('FixSentence')}>
-            <View style={{ flexDirection: 'row'}}>
+            <View style={{ flexDirection: 'row'} as any}>
               <Ionicons name="book-outline" size={32} color="#72f4f2ff" />
               <Ionicons name="pencil-outline" size={32} color="#72f4f2ff" />
             </View>

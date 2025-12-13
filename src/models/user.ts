@@ -11,4 +11,7 @@ export default interface User {
   createdAt: Date;
   updatedAt: Date;
   UserDetail?: UserDetail; // populate kèm UserDetail
+  googleId: string,
+  facebookId: string,
+  loginType: "TK" | "GG" |"FB"
 }

@@ -23,5 +23,14 @@
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
       </activity>
+      <meta-data
+        android:name="com.google.android.gms.client_id"
+        android:value="103691827916-k5soktp5p3inp7mrppu9avk56ba0ue9p.apps.googleusercontent.com" />
+      <activity android:name="com.google.android.gms.auth.api.signin.internal.SignInHubActivity"
+        android:excludeFromRecents="true"
+        android:exported="false" />
+      <activity android:name="com.google.android.gms.common.api.GoogleApiActivity"
+        android:exported="false">
+    </activity>
     </application>
 </manifest>

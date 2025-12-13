@@ -1,30 +1,57 @@
 import axiosInstance from "../../config/axiosconfig";
-// import axios from "axios";
+import { googleLogin } from "../googleAuth";
 
-export const fetchLogin = async (data: any): Promise<any> => {
+export const fetchLogin = async (Data: any, loginType: any): Promise<any> => {
   try {
-    const response = await axiosInstance.post("/api/login", {
-      email: data.email,
-      password: data.password,
-    });
+    if(loginType === 'TK'){
+        const response = await axiosInstance.post("/api/login", {
+        email: Data.email,
+        password: Data.password,
+        loginType: loginType
+      });
+      return response.data;
+    } else if(loginType === 'GG'){  
+      // console.log(1);
+      const {type, data} = await googleLogin();
+      // console.log(idToken, user)
+      // console.log(2);
+      const response = await axiosInstance.post("/api/login", {
+        type: type, 
+        data: data,
+        loginType: loginType
+      });
+      // console.log(3);
+      return response.data;
+    } else if(loginType === 'FB'){
+      const {type, data} = await googleLogin();
 
-    // ✅ Lưu token sau khi login thành công
-    // if (response.data?.token) {
-    //     console.log("Storing token:", response.data.token);
-    //   await AsyncStorage.setItem("authToken", response.data.token);
-    // }
+      const response = await axiosInstance.post("/api/login", {
+        type: type, 
+        data: data,
+        loginType: loginType
+      });
+      return response.data;
+    } else if(loginType === 'Apple'){
+      const {type, data} = await googleLogin();
 
-    return response.data;
+      const response = await axiosInstance.post("/api/login", {
+        type: type, 
+        data: data,
+        loginType: loginType
+      });
+      return response.data;
+    }
   } catch (error: any) {
     console.error("Error fetching login:", error);
     throw error;
   }
 };
 
-export const fetchLoginWithPhone = async (data: any): Promise<any> => {
+export const fetchLoginWithPhone = async (data: any, loginType: string): Promise<any> => {
   try {
-    const response = await axiosInstance.post("/api/loginwithphone", {
+    const response = await axiosInstance.post("/api/login", {
       phone: data.phoneNumber,
+      loginType: loginType
     });
 
     // ✅ Lưu token

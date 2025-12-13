@@ -12,6 +12,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+
   // Load trạng thái login từ AsyncStorage
   useEffect(() => {
     AsyncStorage.getItem("authToken").then((token) => {

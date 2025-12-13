@@ -48,7 +48,7 @@ export default function LoginWithPhone({ navigation }: any) {
                     phoneNumber: phoneNumber.trim(),
                 }
 
-                fetchLoginWithPhone(data)
+                fetchLoginWithPhone(data, 'OTP')
                 .then(rpdata => {
                     // console.log("Login successful:", data);
                     saveToken(rpdata.token, rpdata.user._id);

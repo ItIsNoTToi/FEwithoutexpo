@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/AuthContext';
 import { fetchLogin } from '../../services/api/auth.services';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 export async function saveToken(token: string, userId: string) {
   await AsyncStorage.setItem('userId', userId);
@@ -16,8 +17,8 @@ export default function Login({ navigation }: any) {
   const [email, setEmail] = useState('giangvanhung2003@gmail.com');
   const [password, setPassword] = useState('Hung123456@');
 
-  const handleLogin = () => {
-    if (!inputVisible) {
+  const handleLogin = (type: String) => {
+    if (!inputVisible && type === 'TK') {
       setInputVisible(true); // show input field
     } else {
       if (email && password) {
@@ -26,7 +27,7 @@ export default function Login({ navigation }: any) {
           password: password.trim(),
         }
 
-        fetchLogin( data )
+        fetchLogin(data, type)
           .then((rpdata) => {
             //console.log("Login successful:", data);
             saveToken(rpdata.token, rpdata.user._id);
@@ -75,8 +76,18 @@ export default function Login({ navigation }: any) {
           />
         )}
 
-        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+        <TouchableOpacity style={styles.loginButton} onPress={() => handleLogin('TK')}>
           <Text style={styles.loginText}>Login with Email</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={[styles.loginButton, 
+          { 
+            backgroundColor: "rgba(255, 255, 255, 1)", 
+            width: '30%',
+            borderRadius: 50, 
+
+          } as any]} onPress={() => handleLogin('GG')}>
+          <Ionicons name="logo-google" size={32} color="#fab915ff" />
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => {}}>
