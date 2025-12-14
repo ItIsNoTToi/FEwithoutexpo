@@ -68,7 +68,7 @@ export const fetchLoginWithPhone = async (data: any, loginType: string): Promise
 
 export const fetchRegister = async (userData: any): Promise<any> => {
     try { 
-        console.log(userData);
+        // console.log(userData);
         const response = await axiosInstance.post('/api/register', {
             userData: userData
         });

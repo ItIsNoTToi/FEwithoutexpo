@@ -42,6 +42,7 @@ export default function Login({ navigation }: any) {
 
     fetchLogin(data, type)
       .then(res => {
+        // console.log('djaksdhkjs', res);
         res.success
           ? login(res)
           : Alert.alert('❌ Login failed', 'Invalid credentials');

@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-shadow */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-// screens/LearningWithAI/listen.tsx
+// screens/LearningWithAI/reading.tsx
 import React, { useEffect, useRef, useState } from "react";
 import {
   View, Text, TouchableOpacity, StyleSheet,
@@ -10,7 +9,7 @@ import {
   Animated
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "../../redux/store";
 import { useChatlog } from "../../hooks/useChatlog";
 import { startLessonAI, EndLessonAI, PauseLessonAI, fetchAIStream, retakeLessonApi } from "../../services/api/AI.services";
@@ -27,16 +26,16 @@ import { useResetChatlog } from "../../hooks/useResetChatlog";
 import { speak } from "../../services/api/speak.services";
 
 type Mode = "idle" | "record" | "keyboard";
-type Props = NativeStackScreenProps<LessonStackParamList, 'listening'>;
+type Props = NativeStackScreenProps<LessonStackParamList, 'topic'>;
 
-export default function ListenChat({ route, navigation }: Props) {
+export default function Topic({ route, navigation }: Props) {
   const { type, resetCache } = route.params;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const flatRef = useRef<FlatList<any>>(null);
   const selectedLesson = useSelector((s: RootState) => s?.lesson.Lesson);
   const [user, setUser] = useState<User>();
   const [userId, setUserId] = useState<string>("");
-  const [lessonId, setlessonId] = useState<string>(selectedLesson!._id);
+  const lessonId = selectedLesson?._id;
   const [userInput, setUserInput] = useState('');
   const [content, setContent] = useState('');
   const [contentVisible, setContentVisible] = useState(false);
@@ -48,7 +47,6 @@ export default function ListenChat({ route, navigation }: Props) {
   const { resetChatlog } = useResetChatlog();
   const lessonStarted = useRef(false);
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState(false);
   const [recognized, setRecognized] = useState("");
   const [pitch, setPitch] = useState<number>(0);
   const [error, setError] = useState("");
@@ -57,9 +55,9 @@ export default function ListenChat({ route, navigation }: Props) {
   const [results, setResults] = useState<string[]>([]);
   const [partialResults, setPartialResults] = useState<string[]>([]);
 
-  useEffect(() => {
+  useEffect(() =>{
     getUser()
-    .then(d => {
+    .then( (d: any) => {
         setUser(d.data);
         setUserId(d.data._id);
     })
@@ -67,20 +65,21 @@ export default function ListenChat({ route, navigation }: Props) {
   }, []);
 
   useEffect(() => {
-    if (resetCache) {
+    if (resetCache && userId && lessonId ) {
       Promise.all([
         resetChatlog(userId, lessonId),
         retakeLessonApi(userId, lessonId),
       ])
         .then(() => {
           console.log("Reset xong, gọi API retake xong");
+          fetchstart();
         })
         .catch((err) => {
           console.error("Lỗi khi reset/retake:", err);
         });
     }
   }, [resetCache, userId, lessonId]);
-  
+
   useEffect(() => {
     Voice.onSpeechStart = (e: Event) => {
       console.log("onSpeechStart: ", e);
@@ -125,9 +124,11 @@ export default function ListenChat({ route, navigation }: Props) {
     };
   }, []);
 
-  const sendMessage  = async (text: string) =>{
+  const sendMessage = async (text: string) =>{
       setMode('idle');
+      console.log(1);
       if (sending || !selectedLesson?._id || !userId) return;
+      console.log(2);
       setSending(true);
       if (text) {
         
@@ -204,29 +205,41 @@ export default function ListenChat({ route, navigation }: Props) {
   // Start lesson if no messages yet
 
   useEffect(() => {
-    if (!user || !selectedLesson?._id || messages.length > 0){
+    if (!userId || !selectedLesson?._id || messages.length > 0){
       return;
     } 
     if (lessonStarted.current) return; // ngăn gọi lại
     lessonStarted.current = true;
     (async () => {
-      try {
-        setLoading(true);
-        const d = await startLessonAI(userId, selectedLesson._id, type);
-        setContent(d.content);
-        Alert.alert("Info", d.message);
-        console.log(1);
-        appendMessage({ from: "system", text: d.firstQuestion });
-        speak(d.firstQuestion);
-        console.log(2);
-        setLoading(false);
-      } catch (err) {
-        console.error(err);
-        console.log(3);
-        setLoading(false);
-      }
+      fetchstart();
     })();
   }, [user, selectedLesson, type]);
+
+  const fetchstart = async () => {
+    try {
+      setLoading(true);
+      const d: any = await startLessonAI(userId, lessonId, type);
+      setContent(d.content);
+      Alert.alert("Info", d.message);
+      console.log(1);
+      appendMessage({ from: "system", text: d.firstQuestion });
+      speak(d.firstQuestion);
+      console.log(2);
+      setLoading(false);
+    } catch (err: any) {
+      if (err.response) {
+        // Server có trả về response (có status code)
+        console.error("❌ API Error:", err.response.status, err.response.data);
+      } else if (err.request) {
+        // Request đã gửi đi nhưng không có phản hồi
+        console.error("❌ No response from server:", err.request);
+      } else {
+        // Lỗi xảy ra trước khi gửi request
+        console.error("❌ Request setup error:", err.message);
+      }
+      setLoading(false);
+    }
+  }
 
   // Confirm before leaving
   useEffect(() => {
@@ -243,7 +256,9 @@ export default function ListenChat({ route, navigation }: Props) {
             Tts.stop();
             try {
               await PauseLessonAI(userId, selectedLesson?._id)
-                .then(d => Alert.alert("Info", d.message))
+                .then((d: any) => {
+                  Alert.alert("Info", d.message);
+                })
                 .catch(console.error);
             } catch (err) {
               console.error("Failed to Pause lesson:", err);
@@ -269,7 +284,9 @@ export default function ListenChat({ route, navigation }: Props) {
 
           try {
             await EndLessonAI(userId, selectedLesson._id)
-              .then(d => Alert.alert("Info", d.message))
+              .then((d: any) => {
+                Alert.alert("Info", d.message)
+              })
               .catch(console.error);
           } catch (err) {
             console.error("Failed to finish lesson:", err);
@@ -322,18 +339,11 @@ export default function ListenChat({ route, navigation }: Props) {
     }
   };
 
-  const playAudio = async (content: any, status: boolean)=> {
-    if(status){
-      setStatus(true);
-      speak(content);
-    }else{
-      setStatus(false);
-      Tts.stop();
-    }
-  }
-
   if (!selectedLesson) return <Text style={styles.centerText}>No lesson selected</Text>;
   if(!user) return <Text style={styles.centerText}>Loading user...</Text>;
+  if(messages){
+    console.log(messages);
+  }
   if (loading === true ) return <Text style={styles.centerText}>Loading lesson...</Text>;
   else
   return ( 
@@ -357,19 +367,6 @@ export default function ListenChat({ route, navigation }: Props) {
             <Text style={styles.contentText}>{content}</Text>
           </ScrollView>
         )}
-        
-        {
-          status ? 
-            <TouchableOpacity onPress={() => playAudio(content, false)}>
-              <Ionicons name="pause" size={26} color="#dd3131ff" />
-            </TouchableOpacity>
-          :
-            <TouchableOpacity onPress={() => playAudio(content, true)}>
-              <Ionicons name="play" size={26} color="#dd3131ff" />
-            </TouchableOpacity>
-        }
-        
-
 
         {/* Chat messages */}
         <FlatList
@@ -379,13 +376,13 @@ export default function ListenChat({ route, navigation }: Props) {
           contentContainerStyle={styles.chatList}
           // Gọn hơn khi render message
           renderItem={({ item }) => {
-              const isUser = item.from === "user";
-            
+            const isUser = item.from === "user";
+
             return (
               <View style={[styles.messageBubble, isUser ? styles.userBubble : styles.aiBubble]}>
                 {item.loading ? (
                   <View style={styles.loadingDots}>
-                    <LoadingSpinner size={60} color="#FF6B6B" thickness={4} />
+                    <LoadingSpinner size={30} color="#FF6B6B" thickness={4} />
                   </View>
                 ) : (
                   <Text style={[styles.messageText, isUser && { color: "#fff" }] as any}>
@@ -488,7 +485,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0b0c2a', // galaxy dark background
   },
   innerContainer: { flex: 1 },
-  centerText: { flex: 1, textAlign: "center", textAlignVertical: "center", fontSize: 18, color: "#fff" },
+  centerText: { flex: 1, textAlign: "center", textAlignVertical: "center", fontSize: 18, color: "#000000ff" },
 
   title: { 
     fontSize: 22, 

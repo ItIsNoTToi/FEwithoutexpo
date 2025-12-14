@@ -59,13 +59,13 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 } as any}>
-      <AuthProvider>
-        <Provider store={store}>
+      <Provider store={store}>
+        <AuthProvider>
           <QueryClientProvider client={queryClient}>
             <RootNavigator />
           </QueryClientProvider>
-        </Provider>
-      </AuthProvider>
+        </AuthProvider>
+      </Provider>
     </GestureHandlerRootView>
   );
 }

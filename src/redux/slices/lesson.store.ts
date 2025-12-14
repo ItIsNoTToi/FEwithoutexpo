@@ -2,28 +2,31 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import Lesson from "../../models/lesson";
 
 interface LessonState {
-  selectedLesson: Lesson | null;
-  history: Lesson[];
+  Lesson: Lesson | null;
+  Lessons: Lesson[];
 }
 
 const initialState: LessonState = {
-  selectedLesson: null,
-  history: [],
+  Lesson: null,
+  Lessons: [],
 };
 
 const lessonSlice = createSlice({
   name: "lesson",
   initialState,
   reducers: {
-    setLesson: (state, action: PayloadAction<Lesson>) => {
-      state.selectedLesson = action.payload;
+    setSelectLesson: (state, action: PayloadAction<Lesson|null>) => {
+      state.Lesson = action.payload;
+    },
+    setLessons: (state, action: PayloadAction<Lesson[]>) => {
+      state.Lessons = action.payload;
     },
     resetLesson: (state) => {
-      state.selectedLesson = null;
-      state.history = [];
+      state.Lesson = null;
+      state.Lessons = [];
     },
   },
 });
 
-export const { setLesson, resetLesson } = lessonSlice.actions;
+export const { setSelectLesson, setLessons, resetLesson } = lessonSlice.actions;
 export default lessonSlice.reducer;

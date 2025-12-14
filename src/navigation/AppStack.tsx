@@ -44,8 +44,9 @@ export type TournamentStackParamList = {
 
 export type LessonStackParamList = {
   ListLesson: undefined;
-  ListenChat: { type: string, resetCache: boolean };
-  ReadChat: { type: string, resetCache: boolean };
+  listening: { type: string, resetCache: boolean };
+  reading: { type: string, resetCache: boolean };
+  topic: { type: string, resetCache: boolean };
 }
 
 const Tab = createBottomTabNavigator();
@@ -76,8 +77,9 @@ function MainTabs() {
 
           // Nếu không phải ở màn ListLesson thì ẩn tab bar
           if (
-            routeName === "ListenChat" ||
-            routeName === "ReadChat"
+            routeName === "listening" ||
+            routeName === "reading" ||
+            routeName === "topic"
           ) {
             return {
               title: "Learn with AI",

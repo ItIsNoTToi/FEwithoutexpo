@@ -4,6 +4,7 @@ export const getLesson = async (): Promise<any> => {
     try {
         const response = await axios.get('/api/lessons');
         // console.log(response.data);
+        // console.log('lesson');
         if(response){
             return response.data;
         }

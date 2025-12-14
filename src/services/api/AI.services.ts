@@ -11,7 +11,7 @@ export const fetchAIStream = (
   onEnd?: () => void   // thêm callback end
 ) => {
 
-  console.log("Starting AI stream with data:", data);
+  // console.log("Starting AI stream with data:", data);
   const es = new EventSource(`${URL_API}/api/ai/lesson-chat-stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -37,7 +37,7 @@ export const fetchAIStream = (
     // Xử lý text bình thường
     try {
       const parsed = JSON.parse(event.data);
-      // console.log(parsed);
+      console.log('parsed', parsed);
       onDelta(parsed);
     } catch (err) {
       console.warn("Parse error:", err, event.data);
@@ -55,12 +55,13 @@ export const fetchAIStream = (
 
 export const startLessonAI = async (userId: any, lessonId: any, type: any) => {
     try {
-      console.log(type, userId, lessonId);
+      // console.log(type, userId, lessonId);
       const response = await axiosInstance.post('/api/ai/start',{
           userId: userId, 
           lessonId: lessonId,
           type: type
       })   
+      console.log(response.data);
       return response.data;
     } catch (error: any) {
       console.log('loi ne', error.message);
