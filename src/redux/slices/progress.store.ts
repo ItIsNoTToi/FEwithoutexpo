@@ -1,25 +1,6 @@
+import { LessonProgress } from './../../models/progress';
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import lesson from "../../models/lesson";
-
-export interface LessonProgress {
-  lesson: lesson;
-  status: 'open' | 'passed' | 'failed' | 'in_progress' | 'close';
-  retakeCount: number;
-}
-
-interface Progress {
-  _id: string;
-  userId: string;   
-  Listlesson: LessonProgress[]; 
-  status: 'open' | 'close' | 'passed' | 'in_progress' | 'failed' | 'paused';
-  progress: number;
-  lastSummary: string;
-  retakeCount: number;
-  startedAt: Date | null;
-  completedAt: Date | null;
-  lastAccessedAt: Date | null;
-  userName?: string;
-}
+import { Progress } from "../../models/progress";
 
 interface ProgressState {
   progress: Progress | null
