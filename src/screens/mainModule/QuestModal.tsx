@@ -10,7 +10,7 @@ interface QuestModalProps {
 
 export default function QuestModal({ visible, lesson, onClose, onStart }: QuestModalProps) {
   if (!lesson) return null;
-  console.log(lesson);
+  // console.log(lesson);
   return (
     <Modal transparent animationType="fade" visible={visible}>
       <View style={styles.overlay}>

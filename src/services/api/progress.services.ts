@@ -9,6 +9,15 @@ export const fetchProgressApi = async (userId: any) =>{
     }
 } 
 
+export const fetchdataProgressApi = async (progressId: any) =>{
+    try {
+        const response = await axiosInstance.get(`/api/progress/data/${progressId}`);
+        return response.data;
+    } catch (error) {
+        throw Error;    
+    }
+} 
+
 export const fetchListenResultApi = async (userId: any) => {
     try {
         const response = await axiosInstance.get(`/api/listen/${userId}`);
@@ -19,7 +28,7 @@ export const fetchListenResultApi = async (userId: any) => {
 } 
 
 export const createProgress = async (progressId: string, userId: string, lessonId: string) => {
-    console.log(progressId, userId, lessonId);
+    // console.log(progressId, userId, lessonId);
     try {
         const response = await axiosInstance.post(`/api/createProgress`,{
             progressId: progressId,

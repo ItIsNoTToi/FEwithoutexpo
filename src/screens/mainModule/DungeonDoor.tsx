@@ -1,7 +1,7 @@
 import { TouchableOpacity, Image, StyleSheet, ViewStyle } from "react-native";
 import Lesson from "../../models/lesson";
 
-export type Status = "locked" | "active" | "completed" | "boss";
+export type Status = "locked" | "active" | "completed" | "boss" | "paused";
 
 interface DungeonDoorProps {
   lesson: Lesson;
@@ -15,6 +15,7 @@ const doorImages = {
   active: require("../../uploads/assets/door/door_active.png"),
   completed: require("../../uploads/assets/door/door_completed.png"),
   boss: require("../../uploads/assets/door/door_boss.png"),
+  paused: require("../../uploads/assets/door/door_completed.png"),
 };
 
 export default function DungeonDoor({ status, position, onPress }: DungeonDoorProps) {

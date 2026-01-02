@@ -34,6 +34,6 @@ export const clearAICache = async () => {
   const allKeys = await AsyncStorage.getAllKeys();
   const aiKeys = allKeys.filter(key => key.startsWith('aiAnswer:'));
   await AsyncStorage.multiRemove(aiKeys);
-  console.log("AI cache cleared");
+  // console.log("AI cache cleared");
   return true;
 }

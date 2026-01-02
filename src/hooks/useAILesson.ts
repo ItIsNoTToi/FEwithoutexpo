@@ -1,3 +1,4 @@
+import { PauseLessonAI } from './../services/api/AI.services';
 import { useEffect, useRef, useState } from "react";
 import { useChatlog } from "./useChatlog";
 import {
@@ -6,6 +7,8 @@ import {
   fetchAIStream,
 } from "../services/api/AI.services";
 import { speak } from "../services/api/speak.services";
+import { useDispatch } from 'react-redux';
+import { setProgress } from '../redux/slices/progress.store';
 
 export function useAILesson({
   userId,
@@ -17,14 +20,14 @@ export function useAILesson({
   type: string;
 }) {
   const { data: messages = [], appendMessage, patchLastAIMessage } =
-    useChatlog(userId, lesson?._id);
+  useChatlog(userId, lesson?._id);
 
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [lessonEnded, setLessonEnded] = useState(false);
+  const dispatch = useDispatch();
   const [content, setContent] = useState("");
   const [stepId, setStepId] = useState(0);
-
   const startedRef = useRef(false);
   const sendingRef = useRef(false);
   const mountedRef = useRef(true);
@@ -101,7 +104,14 @@ export function useAILesson({
   /* ---------- END ---------- */
   const finishLesson = async () => {
     if (!userId || !lesson?._id) return;
-    await EndLessonAI(userId, lesson._id);
+    const res = await EndLessonAI(userId, lesson._id);
+    dispatch(setProgress(res.progress));
+    return res.success;
+  };
+
+  const PauseLesson = async () => {
+    if (!userId || !lesson?._id) return;
+    await PauseLessonAI(userId, lesson._id);
   };
 
   return {
@@ -111,6 +121,7 @@ export function useAILesson({
     lessonEnded,
     content,
     startLesson,
+    PauseLesson,
     sendMessage,
     finishLesson
   };

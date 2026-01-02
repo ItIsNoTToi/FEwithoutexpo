@@ -9,7 +9,7 @@ export const FetchRateSpeak = async (originalSentence: string, studentSentence: 
         });
         return res.data;
     } catch (e: any){
-        console.log(e);
+        // console.log(e);
     }
 }
 
@@ -18,7 +18,7 @@ export const GetRandomSentence = async (level: any) => {
         const res = await axiosInstance.get(`/api/randomSentence/${level}`);
         return res.data;
     } catch (e: any){
-        console.log(e);
+        // console.log(e);
     }
 }
 

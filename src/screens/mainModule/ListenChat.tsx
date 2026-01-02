@@ -1,261 +1,169 @@
+/* eslint-disable no-catch-shadow */
 /* eslint-disable @typescript-eslint/no-shadow */
-/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-// screens/LearningWithAI/listen.tsx
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useRef, useState } from "react";
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  Platform, KeyboardAvoidingView, Alert, FlatList, ScrollView,
-  TextInput,
-  Animated
+  Platform, KeyboardAvoidingView, Alert, FlatList,
+  TextInput, Animated
 } from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../redux/store";
-import { useChatlog } from "../../hooks/useChatlog";
-import { startLessonAI, EndLessonAI, PauseLessonAI, fetchAIStream, retakeLessonApi } from "../../services/api/AI.services";
-import { getUser } from "../../services/api/user.services";
-import User from "../../models/user";
+import {retakeLessonApi} from "../../services/api/AI.services";
+import { BackHandler } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LessonStackParamList } from "../../navigation/AppStack";
 import { getStatusBarHeight } from "react-native-status-bar-height";
-import Tts from 'react-native-tts';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import Voice from '@react-native-community/voice';
+import Tts from "react-native-tts";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import Voice from "@react-native-community/voice";
 import LoadingSpinner from "../../features/LoadingSpinner";
 import { useResetChatlog } from "../../hooks/useResetChatlog";
-import { speak } from "../../services/api/speak.services";
-
+// import { speak } from "../../services/api/speak.services";
+import { useAILesson } from "../../hooks/useAILesson";
+import { getdataLesson } from "../../services/api/lesson.services";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 type Mode = "idle" | "record" | "keyboard";
-type Props = NativeStackScreenProps<LessonStackParamList, 'listening'>;
+type Props = NativeStackScreenProps<LessonStackParamList, "reading">;
 
 export default function ListenChat({ route, navigation }: Props) {
-  const { type, resetCache } = route.params;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const flatRef = useRef<FlatList<any>>(null);
-  const selectedLesson = useSelector((s: RootState) => s?.lesson.Lesson);
-  const [user, setUser] = useState<User>();
-  const [userId, setUserId] = useState<string>("");
-  const [lessonId, setlessonId] = useState<string>(selectedLesson!._id);
-  const [userInput, setUserInput] = useState('');
-  const [content, setContent] = useState('');
-  const [contentVisible, setContentVisible] = useState(false);
-  const [isEnding, setIsEnding] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [lessonEnded, setLessonEnded] = useState(false);
+  const { type, lessonmode } = route.params;
+  const userId = useSelector((s: RootState) => s.user._id);
+  const lesson = useSelector((s: RootState) => s.lesson.Lesson);
+  const {messages, loading, sending, lessonEnded, content, startLesson, PauseLesson, sendMessage, finishLesson } = useAILesson({userId, lesson, type});
+  const [userInput, setUserInput] = useState("");
+  const [contentVisible, setContentVisible] = useState(true);
   const [mode, setMode] = useState<Mode>("idle");
-  const { data: messages = [], appendMessage, patchLastAIMessage } = useChatlog(userId, selectedLesson?._id);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const isMounted = useRef(true);
+  const flatRef = useRef<FlatList<any>>(null);
   const { resetChatlog } = useResetChatlog();
-  const lessonStarted = useRef(false);
-  const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState(false);
-  const [recognized, setRecognized] = useState("");
-  const [pitch, setPitch] = useState<number>(0);
-  const [error, setError] = useState("");
-  const [end, setEnd] = useState("");
-  const [started, setStarted] = useState("");
-  const [results, setResults] = useState<string[]>([]);
-  const [partialResults, setPartialResults] = useState<string[]>([]);
-
+  const progress = useSelector((state: RootState) => state.progress.progress);
+  const [totalSteps, settotalstep] = useState(0);
+  const [isFinished, setIsFinished] = useState(false);
+  const allowExitRef = useRef(false);
   useEffect(() => {
-    getUser()
-    .then(d => {
-        setUser(d.data);
-        setUserId(d.data._id);
-    })
-    .catch(console.error);
+    (async () => {
+      const keys = await AsyncStorage.getAllKeys();
+      const data = await AsyncStorage.multiGet(keys);
+      // console.log('🧠 AsyncStorage:', data);
+    })();
   }, []);
 
   useEffect(() => {
-    if (resetCache) {
-      Promise.all([
-        resetChatlog(userId, lessonId),
-        retakeLessonApi(userId, lessonId),
-      ])
-        .then(() => {
-          console.log("Reset xong, gọi API retake xong");
-        })
-        .catch((err) => {
-          console.error("Lỗi khi reset/retake:", err);
-        });
-    }
-  }, [resetCache, userId, lessonId]);
-  
+    getdataLesson(lesson?._id)
+    .then(res => {
+      if (res.data) {
+        settotalstep(res?.data?.steps?.length);
+      }
+    })
+  }, [lesson]);
+
   useEffect(() => {
-    Voice.onSpeechStart = (e: Event) => {
-      console.log("onSpeechStart: ", e);
-      setStarted("√");
-    };
+    if (!lesson || !progress || !totalSteps) return;
+    const pg = progress.Listlesson.find(
+      p => String(p.lesson) === String(lesson?._id)
+    );
+    setIsFinished(
+      pg?.status === 'passed' ||
+      pg?.step! >= totalSteps - 1
+    );
+    // console.log(totalSteps);
+  }, [lesson, progress, totalSteps]);
 
-    Voice.onSpeechRecognized = (e: Event) => {
-      console.log("onSpeechRecognized: ", e);
-      setRecognized("√");
-    };
+  switch (lessonmode) {
+    case 'new':
+      startLesson();
+      break;
 
-    Voice.onSpeechEnd = (e: any) => {
-      console.log("onSpeechEnd: ", e);
-      setEnd("√");
-    };
+    case 'replay':
+      resetChatlog(String(userId), String(lesson?._id));
+      startLesson();
+      break;
 
-    Voice.onSpeechError = (e: any) => {
-      console.log("onSpeechError: ", e);
-      setError(JSON.stringify(e.error));
+    case 'continue':
+      if (isFinished) {
+        startLesson();
+      } else {
+        // loadChatlog();
+      }
+      break;
+  }
+  
+  /* ---------- animation ---------- */
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.05, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true })
+      ])
+    ).start();
+  }, []);
+  /* ---------- cleanup ---------- */
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+      Tts.stop();
+      Voice.destroy().then(Voice.removeAllListeners);
     };
-
+  }, []);
+  /* ---------- reset & replay ---------- */
+  // useEffect(() => {
+  //   // if (resetCache && userId && lesson?._id) {
+  //   //   Promise.all([
+  //   //     resetChatlog(userId, lesson._id),
+  //   //     retakeLessonApi(userId, lesson._id)
+  //   //   ]).then(() => fetchStart());
+  //   // }
+  // }, [resetCache, userId, lesson?._id]);
+  /* ---------- voice ---------- */
+  useEffect(() => {
     Voice.onSpeechResults = async (e: any) => {
-      console.log("onSpeechResults: ", e);
-      setResults(e.value[0]);
-      const bestGuess  = e.value[0];
-      console.log("Best guess: ", bestGuess);
-      await sendMessage(bestGuess);
+      if (e?.value?.[0]) {
+        await sendMessage(e.value[0]);
+      }
+      setMode("idle"); // ✅ QUAY LẠI
     };
-
-    Voice.onSpeechPartialResults = (e: any) => {
-      console.log("onSpeechPartialResults: ", e);
-      setPartialResults(e.value ?? []);
+    Voice.onSpeechEnd = () => {
+      setMode("idle"); // ✅ backup
     };
-    
-    Voice.onSpeechVolumeChanged = (e: any) => {
-      console.log("onSpeechVolumeChanged: ", e);
-      setPitch(e.value ?? 0);
-    };
-
     return () => {
       Voice.destroy().then(Voice.removeAllListeners);
     };
   }, []);
 
-  const sendMessage  = async (text: string) =>{
-      setMode('idle');
-      if (sending || !selectedLesson?._id || !userId) return;
-      setSending(true);
-      if (text) {
-        
-      appendMessage({ from: "user", text: text});
-      setUserInput("");
-      appendMessage({ from: "system", text: "", loading: true });
-
-      let fullText = "";
-      try {
-        fetchAIStream(
-          { userId: userId, lessonId: selectedLesson?._id, userSpeechText: text },
-          parsed => {
-            if (parsed.delta) {
-              fullText += parsed.delta;
-              patchLastAIMessage(parsed.delta);
-            }
-          },
-          () => { if (fullText) speak(fullText); setSending(false); },
-          () => { setLessonEnded(true); setSending(false); }
-        );
-      } catch (err) {
-        setSending(false);
-        console.error("fetchAIStream error:", err);
-      }
-      setUserInput("");
-    }
-  }
-
-  const startRecognizing = async () => {
-    setResults([]); 
-    try {
-      await Voice.start("en-US");
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const stopRecognizing = async () => {
-    try {
-      await Voice.stop();
-      setMode("idle");
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const cancelRecognizing = async () => {
-    try {
-      await Voice.cancel();
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const destroyRecognizer = async () => {
-    try {
-      await Voice.destroy();
-    } catch (e) {
-      console.error(e);
-    }
-    resetStates();
-  };
-
-  const resetStates = () => {
-    setRecognized("");
-    setPitch(0);
-    setError("");
-    setStarted("");
-    setResults([]);
-    setPartialResults([]);
-    setEnd("");
-  };
-
-  // Start lesson if no messages yet
-
   useEffect(() => {
-    if (!user || !selectedLesson?._id || messages.length > 0){
-      return;
-    } 
-    if (lessonStarted.current) return; // ngăn gọi lại
-    lessonStarted.current = true;
-    (async () => {
-      try {
-        setLoading(true);
-        const d = await startLessonAI(userId, selectedLesson._id, type);
-        setContent(d.content);
-        Alert.alert("Info", d.message);
-        console.log(1);
-        appendMessage({ from: "system", text: d.firstQuestion });
-        speak(d.firstQuestion);
-        console.log(2);
-        setLoading(false);
-      } catch (err) {
-        console.error(err);
-        console.log(3);
-        setLoading(false);
+    const unsubscribe = navigation.addListener("beforeRemove", (e) => {
+      if (allowExitRef.current) {
+        // ✅ cho phép thoát, KHÔNG pause
+        return;
       }
-    })();
-  }, [user, selectedLesson, type]);
-
-  // Confirm before leaving
-  useEffect(() => {
-    const unsubscribe = navigation.addListener("beforeRemove", (e: any) => {
-      if (isEnding) return;
 
       e.preventDefault();
-      Alert.alert("Xác nhận", "Bạn có muốn quay lại không?", [
+
+      Alert.alert("Xác nhận", "Bạn có muốn tạm dừng không?", [
         { text: "Hủy", style: "cancel" },
         {
           text: "Có",
           style: "destructive",
           onPress: async () => {
-            Tts.stop();
             try {
-              await PauseLessonAI(userId, selectedLesson?._id)
-                .then(d => Alert.alert("Info", d.message))
-                .catch(console.error);
-            } catch (err) {
-              console.error("Failed to Pause lesson:", err);
+              await Tts.stop();
+            } catch (e) {
+              console.warn("TTS stop failed", e);
             }
+            await PauseLesson();
+            allowExitRef.current = true; // ✅ mở khóa
             navigation.dispatch(e.data.action);
           },
         },
       ]);
     });
-    return unsubscribe;
-  }, [user, selectedLesson, navigation, isEnding]);
 
+    return unsubscribe;
+  }, []);
+  
   const handleFinishLesson = async () => {
     Alert.alert("Xác nhận", "Bạn có muốn kết thúc bài học không?", [
       { text: "Hủy", style: "cancel" },
@@ -263,313 +171,118 @@ export default function ListenChat({ route, navigation }: Props) {
         text: "Có",
         style: "destructive",
         onPress: async () => {
-          setIsEnding(true);
-          Tts.stop();
-          if (!userId || !selectedLesson?._id) return;
-
           try {
-            await EndLessonAI(userId, selectedLesson._id)
-              .then(d => Alert.alert("Info", d.message))
-              .catch(console.error);
-          } catch (err) {
-            console.error("Failed to finish lesson:", err);
+            await Tts.stop();
+          } catch (e) {
+            console.warn("TTS stop failed", e);
           }
+          allowExitRef.current = true; // 🔥 QUAN TRỌNG
+          await finishLesson();
           navigation.goBack();
         },
       },
     ]);
   };
 
-  useFocusEffect(
-    React.useCallback(() => {
-      return () => { Tts.stop(); };
-    }, [])
-  );
-
-  // Auto scroll
-  useEffect(() => {
-    if (messages.length > 0) {
-      flatRef.current?.scrollToEnd({ animated: true });
-    }
-  }, [messages]);
-
-  // Send answer
-  const handleSend = async () => {
-    if (sending || !userInput.trim() || !selectedLesson?._id || !userId) return;
-    setSending(true);
-
-    const answer = userInput.trim();
-    appendMessage({ from: "user", text: answer });
-    setUserInput("");
-    appendMessage({ from: "system", text: "", loading: true });
-
-    let fullText = "";
-    try {
-      fetchAIStream(
-        { userId: userId, lessonId: selectedLesson._id, userSpeechText: answer },
-        parsed => {
-          if (parsed.delta) {
-            fullText += parsed.delta;
-            patchLastAIMessage(parsed.delta);
-          }
-        },
-        () => { if (fullText) speak(fullText); setSending(false); },
-        () => { setLessonEnded(true); setSending(false); }
-      );
-    } catch (err) {
-      setSending(false);
-      console.error("fetchAIStream error:", err);
-    }
-  };
-
-  const playAudio = async (content: any, status: boolean)=> {
-    if(status){
-      setStatus(true);
-      speak(content);
-    }else{
-      setStatus(false);
-      Tts.stop();
-    }
-  }
-
-  if (!selectedLesson) return <Text style={styles.centerText}>No lesson selected</Text>;
-  if(!user) return <Text style={styles.centerText}>Loading user...</Text>;
-  if (loading === true ) return <Text style={styles.centerText}>Loading lesson...</Text>;
-  else
-  return ( 
+  if (!lesson) return <Text style={styles.centerText}>No lesson</Text>;
+  if (!userId) return <Text style={styles.centerText}>Loading user...</Text>;
+  if (loading) return <Text style={styles.centerText}>Loading lesson...</Text>;
+  return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
+      keyboardVerticalOffset={80}
     >
-      <View style={styles.innerContainer}>
-        <Text style={styles.title}>{selectedLesson.title} - {selectedLesson.type}</Text>
+      <Text style={styles.title}>{lesson.title}</Text>
 
-        {/* Lesson content toggle */}
-        <TouchableOpacity onPress={() => setContentVisible(!contentVisible)}>
-          <Text style={styles.contentToggle}>
-            {contentVisible ? 'Hide Lesson Content' : 'Show Lesson Content'}
-          </Text>
-        </TouchableOpacity>
+      <View style={styles.progressBg}>
+        <Animated.View style={[styles.progressFill, { width: `100%` }]} />
+      </View>
 
-        {contentVisible && (
-          <ScrollView style={styles.contentBox}>
-            <Text style={styles.contentText}>{content}</Text>
-          </ScrollView>
+      <TouchableOpacity onPress={() => setContentVisible(!contentVisible)}>
+        <Text style={styles.contentToggle}>
+          {contentVisible ? "Hide Scroll" : "Read Scroll"}
+        </Text>
+      </TouchableOpacity>
+
+      {contentVisible && (
+        <View style={styles.contentBox}>
+          <Text style={styles.contentText}>{content}</Text>
+        </View>
+      )}
+
+      <FlatList
+        ref={flatRef}
+        data={messages}
+        keyExtractor={(_, i) => String(i)}
+        renderItem={({ item }) => (
+          <View style={item.from === "user" ? styles.userBubble : styles.aiBubble}>
+            {item.loading
+              ? <LoadingSpinner size={24} />
+              : <Text style={styles.messageText}>{item.text}</Text>}
+          </View>
         )}
-        
-        {
-          status ? 
-            <TouchableOpacity onPress={() => playAudio(content, false)}>
-              <Ionicons name="pause" size={26} color="#dd3131ff" />
+      />
+
+      <View style={styles.controls}>
+        {mode === "idle" && (
+          <>
+            <TouchableOpacity onPress={() => setMode("keyboard")}>
+              <Ionicons name="keypad-outline" size={28} color="#fff" />
             </TouchableOpacity>
-          :
-            <TouchableOpacity onPress={() => playAudio(content, true)}>
-              <Ionicons name="play" size={26} color="#dd3131ff" />
+            <TouchableOpacity onPress={() => { setMode("record"); Voice.start("en-US"); Tts.stop() }}>
+              <Ionicons name="mic-outline" size={28} color="red" />
             </TouchableOpacity>
-        }
-        
-
-
-        {/* Chat messages */}
-        <FlatList
-          ref={flatRef}
-          data={messages}
-          keyExtractor={(_, idx) => String(idx)}
-          contentContainerStyle={styles.chatList}
-          // Gọn hơn khi render message
-          renderItem={({ item }) => {
-              const isUser = item.from === "user";
-            
-            return (
-              <View style={[styles.messageBubble, isUser ? styles.userBubble : styles.aiBubble]}>
-                {item.loading ? (
-                  <View style={styles.loadingDots}>
-                    <LoadingSpinner size={60} color="#FF6B6B" thickness={4} />
-                  </View>
-                ) : (
-                  <Text style={[styles.messageText, isUser && { color: "#fff" }] as any}>
-                    {item.text}
-                  </Text>
-                )}
-              </View>
-            );
-          }}
-          onContentSizeChange={() => flatRef.current?.scrollToEnd({ animated: true })}
-        />
-
-        {/* Finish button */}
-        {lessonEnded && (
-          <TouchableOpacity style={styles.finishButton} onPress={handleFinishLesson}>
-            <Text style={styles.finishButtonText}>Finish</Text>
+          </>
+        )}
+        {mode === "keyboard" && (
+          <>
+            <TextInput
+              style={styles.input}
+              value={userInput}
+              onChangeText={setUserInput}
+              onSubmitEditing={() => sendMessage(userInput)}
+            />
+            <TouchableOpacity onPress={() => sendMessage(userInput)}>
+              <Ionicons name="send" size={24} color="green" />
+            </TouchableOpacity>
+          </>
+        )}
+        {mode === "record" && (
+          <TouchableOpacity
+            onPress={() => {
+              Voice.stop();
+              setMode("idle");
+            }}
+          >
+            <Ionicons name="stop-circle-outline" size={36} color="red" />
           </TouchableOpacity>
         )}
-
-        {/* --- Controls --- */}
-        {/* <View >
-          <Text style={{ color: '#000'} as any}>Welcome to React Native Voice!</Text>
-          <Text style={{ color: '#000'} as any}>Press the button and start speaking.</Text>
-          <Text style={{ color: '#000'} as any}>{`Started: ${started}`}</Text>
-          <Text style={{ color: '#000'} as any}>{`Recognized: ${recognized}`}</Text>
-          <Text style={{ color: '#000'} as any}>{`Pitch: ${pitch}`}</Text>
-          <Text style={{ color: '#000'} as any}>{`Error: ${error}`}</Text>
-          <Text style={{ color: '#000'} as any}>Results</Text>
-          {results.map((result, index) => (
-            <Text style={{ color: '#000'} as any} key={`result-${index}`}>{result}</Text>
-          ))}
-          <Text style={{ color: '#000'} as any}>Partial Results</Text>
-          {partialResults.map((result, index) => (
-            <Text style={{ color: '#000'} as any} key={`partial-result-${index}`}>{result}</Text>
-          ))}
-          <Text style={{ color: '#000'} as any}>{`End: ${end}`}</Text>
-        </View> */}
-
-        {/*  */}
-        <View style={styles.controls}>
-          {mode === "idle" && (
-            <>
-              <TouchableOpacity style={[styles.circleBtn, { backgroundColor: "#007AFF" }] as any}
-                onPress={() => { setMode("keyboard"); }}>
-                <Ionicons name="keypad-outline" size={26} color="#fff" />
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.circleBtn, { backgroundColor: "red" } as any]}
-                onPress={() => { setMode("record"); startRecognizing(); }}>
-                <Ionicons name="mic-outline" size={26} color="#fff" />
-              </TouchableOpacity>
-            </>
-          )}
-
-          {mode === "record" && (
-            <View style={styles.row}>
-              <LoadingSpinner size={30} color="#FF6B6B" thickness={4} />
-              <TouchableOpacity style={[styles.circleBtn, { backgroundColor: "red" }] as any}
-                onPress={() => { stopRecognizing(); setMode("idle"); }}>
-                <Ionicons name="stop-circle-outline" size={26} color="#fff" />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={destroyRecognizer} style={[styles.circleBtn, { backgroundColor: "red" }] as any}>
-                <Ionicons name="remove-circle-outline" size={26} color="#fff" />
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.circleBtn, { backgroundColor: "#999" }] as any}
-                onPress={() => { cancelRecognizing(); setMode("idle"); }}>
-                <Ionicons name="close" size={26} color="#fff" />
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {mode === "keyboard" && (
-            <View style={styles.inputRow}>
-              <TextInput
-                style={styles.textInput}
-                value={userInput}
-                onChangeText={setUserInput}
-                placeholder="Type a message..."
-                onSubmitEditing={handleSend}
-              />
-              <TouchableOpacity style={[styles.circleBtn, { backgroundColor: "green" }] as any}
-                onPress={handleSend}>
-                <Ionicons name="send" size={22} color="#fff" />
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.circleBtn, { backgroundColor: "#999" }] as any}
-                onPress={() => setMode("idle")}>
-                <Ionicons name="close" size={22} color="#fff" />
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
       </View>
+      {lessonEnded && (
+        <TouchableOpacity style={styles.finishButton} onPress={handleFinishLesson}>
+          <Text style={styles.finishText}>Finish Lesson</Text>
+        </TouchableOpacity>
+      )}
     </KeyboardAvoidingView>
   );
 }
 
+/* ---------- styles ---------- */
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    paddingTop: getStatusBarHeight(), 
-    backgroundColor: '#0b0c2a', // galaxy dark background
-  },
-  innerContainer: { flex: 1 },
-  centerText: { flex: 1, textAlign: "center", textAlignVertical: "center", fontSize: 18, color: "#fff" },
-
-  title: { 
-    fontSize: 22, 
-    fontWeight: "bold", 
-    marginBottom: 8, 
-    textAlign: "center", 
-    color: "#fff",
-    textShadowColor: "#7F00FF",
-    textShadowRadius: 12,
-  },
-
-  contentToggle: { fontSize: 16, color: "#4FACFE", paddingHorizontal: 16, marginBottom: 8 },
-  contentBox: { 
-    backgroundColor: "rgba(255,255,255,0.05)", 
-    marginHorizontal: 16, 
-    borderRadius: 12, 
-    padding: 12, 
-    maxHeight: 150, 
-    marginBottom: 12 
-  },
-  contentText: { fontSize: 16, color: "#fff" },
-
-  chatList: { paddingHorizontal: 16, paddingBottom: 8 },
-  messageBubble: { padding: 12, borderRadius: 18, marginBottom: 10, maxWidth: "75%" },
-
-  // Bubble user / AI
-  userBubble: { 
-    alignSelf: "flex-end", 
-    backgroundColor: "#4FACFE", 
-    shadowColor: "#00F2FE", 
-    shadowOpacity: 0.6, 
-    shadowRadius: 10 
-  },
-  aiBubble: { 
-    alignSelf: "flex-start", 
-    backgroundColor: "#7F00FF", 
-    shadowColor: "#E100FF", 
-    shadowOpacity: 0.6, 
-    shadowRadius: 10 
-  },
-  messageText: { fontSize: 16, color: "#fff" },
-
-  finishButton: { 
-    paddingVertical: 12, 
-    backgroundColor: "#E100FF", 
-    borderRadius: 12, 
-    marginHorizontal: 16, 
-    marginBottom: 16, 
-    alignItems: "center", 
-    shadowColor: "#FF00FF",
-    shadowOpacity: 0.8,
-    shadowRadius: 12,
-  },
-  finishButtonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
-
-  controls: { flexDirection: "row", justifyContent: "center", alignItems: "center", padding: 12 },
-  circleBtn: { 
-    padding: 14, 
-    borderRadius: 50, 
-    marginHorizontal: 6, 
-    shadowColor: "#00F2FE", 
-    shadowOpacity: 0.8, 
-    shadowRadius: 10 
-  },
-  row: { flexDirection: "row", alignItems: "center" },
-  dot: { width: 16, height: 16, borderRadius: 8, backgroundColor: "#FF0044", marginRight: 12 },
-
-  inputRow: { flexDirection: "row", alignItems: "center", flex: 1 },
-  textInput: { 
-    flex: 1, 
-    borderWidth: 1, 
-    borderColor: "#4FACFE", 
-    borderRadius: 20, 
-    paddingHorizontal: 12, 
-    color: '#fff',
-    backgroundColor: "rgba(255,255,255,0.05)"
-  },
-  loadingDots: { 
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    height: 20,
-  },
+  container: { flex: 1, paddingTop: getStatusBarHeight(), backgroundColor: "#0b0c2a" },
+  centerText: { color: "#fff", textAlign: "center", marginTop: 40 },
+  title: { color: "#fff", fontSize: 22, textAlign: "center", marginBottom: 8 },
+  progressBg: { height: 6, backgroundColor: "#222", borderRadius: 3 },
+  progressFill: { height: 6, backgroundColor: "#7F00FF" },
+  contentToggle: { color: "#4FACFE", textAlign: "center", marginVertical: 8 },
+  contentBox: { padding: 12, backgroundColor: "#111", borderRadius: 10 },
+  contentText: { color: "#fff" },
+  userBubble: { alignSelf: "flex-end", backgroundColor: "#4FACFE", padding: 10, margin: 6, borderRadius: 12 },
+  aiBubble: { alignSelf: "flex-start", backgroundColor: "#7F00FF", padding: 10, margin: 6, borderRadius: 12 },
+  messageText: { color: "#fff" },
+  controls: { flexDirection: "row", justifyContent: "center", gap: 20, margin: 12 },
+  input: { flex: 1, borderWidth: 1, borderColor: "#4FACFE", color: "#fff", padding: 8 },
+  finishButton: { backgroundColor: "#E100FF", padding: 12, margin: 16, borderRadius: 10 },
+  finishText: { color: "#fff", textAlign: "center", fontWeight: "bold" }
 });

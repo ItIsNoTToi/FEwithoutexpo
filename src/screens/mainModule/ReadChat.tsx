@@ -1,3 +1,5 @@
+/* eslint-disable no-catch-shadow */
+/* eslint-disable @typescript-eslint/no-shadow */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useRef, useState } from "react";
@@ -20,25 +22,75 @@ import LoadingSpinner from "../../features/LoadingSpinner";
 import { useResetChatlog } from "../../hooks/useResetChatlog";
 // import { speak } from "../../services/api/speak.services";
 import { useAILesson } from "../../hooks/useAILesson";
+import { getdataLesson } from "../../services/api/lesson.services";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 type Mode = "idle" | "record" | "keyboard";
 type Props = NativeStackScreenProps<LessonStackParamList, "reading">;
 
 export default function ReadChatRPG({ route, navigation }: Props) {
-  const { type, resetCache } = route.params;
+  const { type, lessonmode } = route.params;
   const userId = useSelector((s: RootState) => s.user._id);
   const lesson = useSelector((s: RootState) => s.lesson.Lesson);
-  const {messages, loading, sending, lessonEnded, content, startLesson, sendMessage, finishLesson } = useAILesson({userId, lesson, type});
-  useEffect(() => {
-    startLesson();
-  }, [userId, lesson?._id]);
+  const {messages, loading, sending, lessonEnded, content, startLesson, PauseLesson, sendMessage, finishLesson } = useAILesson({userId, lesson, type});
   const [userInput, setUserInput] = useState("");
   const [contentVisible, setContentVisible] = useState(true);
   const [mode, setMode] = useState<Mode>("idle");
-  const [progress, setProgress] = useState(0);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const isMounted = useRef(true);
   const flatRef = useRef<FlatList<any>>(null);
   const { resetChatlog } = useResetChatlog();
+  const progress = useSelector((state: RootState) => state.progress.progress);
+  const [totalSteps, settotalstep] = useState(0);
+  const [isFinished, setIsFinished] = useState(false);
+  const allowExitRef = useRef(false);
+  useEffect(() => {
+    (async () => {
+      const keys = await AsyncStorage.getAllKeys();
+      const data = await AsyncStorage.multiGet(keys);
+      // console.log('🧠 AsyncStorage:', data);
+    })();
+  }, []);
+
+  useEffect(() => {
+    getdataLesson(lesson?._id)
+    .then(res => {
+      if (res.data) {
+        settotalstep(res?.data?.steps?.length);
+      }
+    })
+  }, [lesson]);
+
+  useEffect(() => {
+    if (!lesson || !progress || !totalSteps) return;
+    const pg = progress.Listlesson.find(
+      p => String(p.lesson) === String(lesson?._id)
+    );
+    setIsFinished(
+      pg?.status === 'passed' ||
+      pg?.step! >= totalSteps - 1
+    );
+    // console.log(totalSteps);
+  }, [lesson, progress, totalSteps]);
+
+  switch (lessonmode) {
+    case 'new':
+      startLesson();
+      break;
+
+    case 'replay':
+      resetChatlog(String(userId), String(lesson?._id));
+      startLesson();
+      break;
+
+    case 'continue':
+      if (isFinished) {
+        startLesson();
+      } else {
+        // loadChatlog();
+      }
+      break;
+  }
+  
   /* ---------- animation ---------- */
   useEffect(() => {
     Animated.loop(
@@ -57,14 +109,14 @@ export default function ReadChatRPG({ route, navigation }: Props) {
     };
   }, []);
   /* ---------- reset & replay ---------- */
-  useEffect(() => {
-    // if (resetCache && userId && lesson?._id) {
-    //   Promise.all([
-    //     resetChatlog(userId, lesson._id),
-    //     retakeLessonApi(userId, lesson._id)
-    //   ]).then(() => fetchStart());
-    // }
-  }, [resetCache, userId, lesson?._id]);
+  // useEffect(() => {
+  //   // if (resetCache && userId && lesson?._id) {
+  //   //   Promise.all([
+  //   //     resetChatlog(userId, lesson._id),
+  //   //     retakeLessonApi(userId, lesson._id)
+  //   //   ]).then(() => fetchStart());
+  //   // }
+  // }, [resetCache, userId, lesson?._id]);
   /* ---------- voice ---------- */
   useEffect(() => {
     Voice.onSpeechResults = async (e: any) => {
@@ -80,53 +132,38 @@ export default function ReadChatRPG({ route, navigation }: Props) {
       Voice.destroy().then(Voice.removeAllListeners);
     };
   }, []);
-  // useEffect(() => {
-  //   const onBackPress = () => {
-  //     Alert.alert(
-  //       "Xác nhận",
-  //       "Bạn có muốn thoát bài học không?",
-  //       [
-  //         { text: "Hủy", style: "cancel" },
-  //         {
-  //           text: "Có",
-  //           style: "destructive",
-  //           onPress: async () => {
-  //             Tts.stop();
-  //             if(userId){
-  //               await finishLesson();
-  //             }
-  //             navigation.goBack();
-  //           }
-  //         }
-  //       ]
-  //     );
-  //     return true; 
-  //   };
-  //   const sub = BackHandler.addEventListener(
-  //     "hardwareBackPress",
-  //     onBackPress
-  //   );
-  //   return () => sub.remove();
-  // }, []);
 
-   useEffect(() => {
-    const unsubscribe = navigation.addListener("beforeRemove", (e: any) => {
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("beforeRemove", (e) => {
+      if (allowExitRef.current) {
+        // ✅ cho phép thoát, KHÔNG pause
+        return;
+      }
+
       e.preventDefault();
-      Alert.alert("Xác nhận", "Bạn có muốn quay lại không?", [
+
+      Alert.alert("Xác nhận", "Bạn có muốn tạm dừng không?", [
         { text: "Hủy", style: "cancel" },
         {
           text: "Có",
           style: "destructive",
           onPress: async () => {
-            Tts.stop();
-            finishLesson();
+            try {
+              await Tts.stop();
+            } catch (e) {
+              console.warn("TTS stop failed", e);
+            }
+            await PauseLesson();
+            allowExitRef.current = true; // ✅ mở khóa
             navigation.dispatch(e.data.action);
           },
         },
       ]);
     });
+
     return unsubscribe;
   }, []);
+  
   const handleFinishLesson = async () => {
     Alert.alert("Xác nhận", "Bạn có muốn kết thúc bài học không?", [
       { text: "Hủy", style: "cancel" },
@@ -134,18 +171,22 @@ export default function ReadChatRPG({ route, navigation }: Props) {
         text: "Có",
         style: "destructive",
         onPress: async () => {
-          Tts.stop();
-          finishLesson();
+          try {
+            await Tts.stop();
+          } catch (e) {
+            console.warn("TTS stop failed", e);
+          }
+          allowExitRef.current = true; // 🔥 QUAN TRỌNG
+          await finishLesson();
           navigation.goBack();
-        }
-      }
+        },
+      },
     ]);
   };
 
   if (!lesson) return <Text style={styles.centerText}>No lesson</Text>;
   if (!userId) return <Text style={styles.centerText}>Loading user...</Text>;
   if (loading) return <Text style={styles.centerText}>Loading lesson...</Text>;
-
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -155,7 +196,7 @@ export default function ReadChatRPG({ route, navigation }: Props) {
       <Text style={styles.title}>{lesson.title}</Text>
 
       <View style={styles.progressBg}>
-        <Animated.View style={[styles.progressFill, { width: `${progress}%` }]} />
+        <Animated.View style={[styles.progressFill, { width: `100%` }]} />
       </View>
 
       <TouchableOpacity onPress={() => setContentVisible(!contentVisible)}>

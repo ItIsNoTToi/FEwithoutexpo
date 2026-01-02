@@ -5,6 +5,7 @@ export interface LessonProgress {
   lesson: lesson;
   status: 'open' | 'close' | 'passed' | 'in_progress' | 'failed' | 'paused';
   retakeCount: number;
+  step: number; // current step
 }
 
 export interface Progress {

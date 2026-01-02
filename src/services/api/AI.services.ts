@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import axiosInstance from "../../config/axiosconfig";
 import Config from "react-native-config";
 import EventSource from "react-native-sse";
@@ -37,7 +38,7 @@ export const fetchAIStream = (
     // Xử lý text bình thường
     try {
       const parsed = JSON.parse(event.data);
-      console.log('parsed', parsed);
+      // console.log('parsed', parsed);
       onDelta(parsed);
     } catch (err) {
       console.warn("Parse error:", err, event.data);
@@ -45,8 +46,8 @@ export const fetchAIStream = (
     }
   });
 
-  es.addEventListener("error", (event) => {
-    console.error("SSE error:", event);
+  es.addEventListener("error", (event: any) => {
+    // console.error("SSE error:", event);
     es.close();
   });
 
@@ -61,10 +62,10 @@ export const startLessonAI = async (userId: any, lessonId: any, type: any) => {
           lessonId: lessonId,
           type: type
       })   
-      console.log(response.data);
+      // console.log(response.data);
       return response.data;
     } catch (error: any) {
-      console.log('loi ne', error.message);
+      // console.log('loi ne', error.message);
       throw Error ( error.message);
     }
 }
@@ -83,12 +84,12 @@ export const EndLessonAI = async (userId: any, lessonId: any) => {
 
 export const PauseLessonAI = async (userId: any, lessonId: any) => {
   try {
-    console.log(userId, lessonId);
-        const response = await axiosInstance.post('/api/ai/pause',{
-            userId: userId, 
-            lessonId: lessonId 
-        })   
-        return response.data;
+      // console.log(userId, lessonId);
+      const response = await axiosInstance.post('/api/ai/pause',{
+          userId: userId, 
+          lessonId: lessonId 
+      })   
+      return response.data;
     } catch (error: any) {
         throw Error (error.message);
     }

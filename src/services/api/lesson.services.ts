@@ -13,3 +13,16 @@ export const getLesson = async (): Promise<any> => {
     }
 }
 
+export const getdataLesson = async(lessonId: any): Promise<any> => {
+    try {
+        const response = await axios.post('/api/lesson/data', {
+            lessonId: lessonId
+        });
+        if(response){
+            return response.data;
+        }
+    } catch (error: any) {
+        throw Error (error.message);
+    }
+}
+

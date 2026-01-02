@@ -16,8 +16,10 @@ import { LessonStackParamList } from "../../navigation/AppStack";
 import { RootState } from "../../redux/store";
 import { createProgress, fetchProgressApi } from "../../services/api/progress.services";
 import { setProgress, updateProgress } from "../../redux/slices/progress.store";
+import { getProgressStatus } from "../../helper/checkpg";
 
 type Props = NativeStackScreenProps<LessonStackParamList, "ListLesson">;
+type StartMode = "new" | "replay" | "continue";
 
 export default function ListLesson({ navigation }: Props) {
   const [showModal, setShowModal] = useState(false);
@@ -48,7 +50,7 @@ export default function ListLesson({ navigation }: Props) {
           if(userId){
             const pg = await fetchProgressApi(userId);
             if(pg){
-              console.log(pg.data.Listlesson[0].lesson);
+              // console.log(pg.data.Listlesson[0].lesson);
               dispatch(setProgress(pg.data));
             }else{
               dispatch(setProgress(null));
@@ -68,47 +70,72 @@ export default function ListLesson({ navigation }: Props) {
     }, [])
   );
   const getStatus = (lesson: Lesson, index: number) => {
-    if (!progress || !progress.Listlesson) return index === 0 ? "active" : "locked";
-    const pg = progress.Listlesson.find(
+      if (!progress || !progress.Listlesson) return index === 0 ? "active" : "locked";
+      const pg = progress.Listlesson.find(
+        p => String(p.lesson) === String(lesson._id)
+      );
+      if (pg) {
+        switch (pg.status) {
+          case "passed": return "completed";
+          case "in_progress": return "active";
+          case "open": return "active";
+          case "failed": return "locked";
+          case "paused": return "paused";
+          case "close": return index === 0 ? "active" : "locked"; // lesson đầu tiên mặc định active
+          default: return "locked";
+        }
+      }
+      return index === 0 ? "active" : "locked";
+    };
+    const startLesson = async (
+    lesson: Lesson,
+    mode: StartMode
+    ) => {
+    if (!lesson || !userId) return;
+
+    const pg = progress?.Listlesson.find(
       p => String(p.lesson) === String(lesson._id)
     );
-    if (pg) {
-      switch (pg.status) {
-        case "passed": return "completed";
-        case "in_progress": return "active";
-        case "open": return "active";
-        case "failed": return "locked";
-        case "close": return index === 0 ? "active" : "locked"; // lesson đầu tiên mặc định active
-        default: return "locked";
-      }
-    }
-    return index === 0 ? "active" : "locked";
-  };
-  const startLesson = async (lessonToStart: Lesson) => {
-    if (!lessonToStart || !userId) return;
-    // console.log(userId);
-    setShowModal(false);
 
-    const pg = progress?.Listlesson.find(p => p?.lesson._id === lessonToStart._id);
     if (pg) {
       dispatch(updateProgress({
-        lesson: lessonToStart, 
-        status: 'in_progress', 
-        retakeCount: 0  
+        lesson,
+        status: "in_progress",
+        retakeCount:
+          mode === "replay"
+            ? (pg.retakeCount || 0) + 1
+            : pg.retakeCount,
+        step: 
+          mode === "replay"
+            ? 0
+            : pg.step
       }));
     }
 
-    dispatch(setSelectLesson(lessonToStart));
+    dispatch(setSelectLesson(lesson));
+    setShowModal(false);
 
-    // Navigate
-    if (lessonToStart.type === "listening") {
-      navigation.navigate("listening", { type: lessonToStart.type, resetCache: false });
-    } else if (lessonToStart.type === "topic") {
-      navigation.navigate("topic", { type: lessonToStart.type, resetCache: false });
-    } else {
-      navigation.navigate("reading", { type: lessonToStart.type, resetCache: false });
+    switch (lesson.type) {
+      case "listening":
+        navigation.navigate("listening", { type: lesson.type, lessonmode: mode });
+        break;
+      case "topic":
+        navigation.navigate("topic", { type: lesson.type, lessonmode: mode });
+        break;
+      default:
+        navigation.navigate("reading", { type: lesson.type, lessonmode: mode });
     }
-  };
+    };
+
+  const lessonStatus = selectedlesson
+    ? getStatus(
+        selectedlesson,
+        lessons.findIndex(l => l._id === selectedlesson._id)
+      )
+    : null;
+  const isCompleted = lessonStatus === "completed";
+  const isPaused = lessonStatus === "paused";
+  const isActive = lessonStatus === "active";
   return (
     <>
       <ScrollView contentContainerStyle={styles.viewscroll}>
@@ -126,8 +153,8 @@ export default function ListLesson({ navigation }: Props) {
                 left: index % 2 === 0 ? 80 : 220,
               }}
               onPress={() => {
-                dispatch(setSelectLesson(lesson)); // lưu lesson vào redux
-                setShowModal(true);                // bật modal
+                setShowModal(true);  
+                dispatch(setSelectLesson(lesson));
               }}
             />
           ))}
@@ -142,9 +169,33 @@ export default function ListLesson({ navigation }: Props) {
             <Text style={styles.title}>{selectedlesson?.title}</Text>
             <Text style={styles.type}>📌 Type: {selectedlesson?.type.toUpperCase()}</Text>
             <Text style={styles.desc}>{selectedlesson?.description}</Text>
-            <TouchableOpacity style={styles.startBtn} onPress={() => startLesson(selectedlesson!)}>
-              <Text style={styles.btnText}>⚔️ Accept Quest</Text>
-            </TouchableOpacity>
+            {(isCompleted || isPaused) && (
+              <>
+                <TouchableOpacity
+                  style={[styles.startBtn, styles.replayBtn]}
+                  onPress={() => startLesson(selectedlesson!, "replay")}
+                >
+                  <Text style={styles.btnText}>🔁 Play Again</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.startBtn}
+                  onPress={() => startLesson(selectedlesson!, "continue")}
+                >
+                  <Text style={styles.btnText}>⚔️ Continue Quest</Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {/* Active (chưa học) */}
+            {isActive && (
+              <TouchableOpacity
+                style={styles.startBtn}
+                onPress={() => startLesson(selectedlesson!, "new")}
+              >
+                <Text style={styles.btnText}>⚔️ Accept Quest</Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity onPress={() => setShowModal(false)}>
               <Text style={styles.close}>Close</Text>
             </TouchableOpacity>
@@ -156,6 +207,15 @@ export default function ListLesson({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
+  replayBtn: {
+    backgroundColor: "#38bdf8",
+  },
+  completedText: {
+    textAlign: "center",
+    color: "#22c55e",
+    fontWeight: "700",
+    marginBottom: 10,
+  },
   viewscroll: { flexGrow: 1 },
   map: { flex: 1, width: "100%", minHeight: 800 },
   overlay: {

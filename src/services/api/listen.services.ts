@@ -9,7 +9,7 @@ export const getLessonAudio = async (lessonId: string) => {
     // console.log(data);
     return data;
   } catch (error) {
-    console.log(error);
+    // console.log(error);
   }
 };
 

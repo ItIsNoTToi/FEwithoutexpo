@@ -44,9 +44,9 @@ export type TournamentStackParamList = {
 
 export type LessonStackParamList = {
   ListLesson: undefined;
-  listening: { type: string, resetCache: boolean };
-  reading: { type: string, resetCache: boolean };
-  topic: { type: string, resetCache: boolean };
+  listening: { type: string, lessonmode: string };
+  reading: { type: string, lessonmode: string };
+  topic: { type: string, lessonmode: string };
 }
 
 const Tab = createBottomTabNavigator();

@@ -9,7 +9,7 @@ export type ChatMessage = {
   loading?: boolean;  // <-- thêm
 };
 
-export const storageKey = (userId: string, lessonId: string) =>
+export const storageKey = async (userId: string, lessonId: string) =>
   `chatlog:${userId}:${lessonId}`;
 
 // helper: luôn lưu cache cùng format {role, content}
@@ -36,7 +36,7 @@ export function useChatlog(userId?: string, lessonId?: string) {
       const key = storageKey(userId, lessonId);
 
       // 1. Lấy cache
-      const cached = await AsyncStorage.getItem(key);
+      const cached = await AsyncStorage.getItem(await key);
       let initial: ChatMessage[] = [];
       if (cached) {
         const raw = JSON.parse(cached);
@@ -49,6 +49,7 @@ export function useChatlog(userId?: string, lessonId?: string) {
       // 2. Gọi API
       const res = await fetchChatlog(userId, lessonId);
       const raw = res?.data?.history ?? [];
+      // console.log('raw', raw);
   
       const messages: ChatMessage[] = raw.map((m: any) => ({
         from: m.role === "user" ? "user" : "system",
@@ -57,7 +58,7 @@ export function useChatlog(userId?: string, lessonId?: string) {
 
       // 3. Lưu lại cache mới
       if (messages.length > 0) {
-        await AsyncStorage.setItem(key, JSON.stringify(raw));
+        await AsyncStorage.setItem(await key, JSON.stringify(raw));
         return messages;
       }
 

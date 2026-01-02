@@ -1,12 +1,12 @@
 // import AsyncStorage from "@react-native-async-storage/async-storage";
-import axiosInstance from "../../config/axiosconfig";
+import axios from "../../config/axiosconfig";
 // import { useQuery } from "@tanstack/react-query";
 
 export const fetchChatlog = async (userId: any, lessonId: any) => {
     try {
 
         // console.log(userId, lessonId);
-        const response = await axiosInstance.post('/api/getchatlog',
+        const response = await axios.post('/api/getchathistory',
         {
             userId: userId, 
             lessonId: lessonId
@@ -17,6 +17,16 @@ export const fetchChatlog = async (userId: any, lessonId: any) => {
         console.error(error);
     }
 }
+
+export const resetChatlogApi = async (userId: any, lessonId: any) => {
+   try {
+        // console.log(userId, lessonId);
+        const response = await axios.post("/api/chatlog/clear", { userId, lessonId });
+        return response.data;
+    } catch (error) {
+        console.error(error);
+    } 
+};
 
 // async function getChatlogCached(userId: string, lessonId: string) {
 //   const cacheKey = `chatlog:${userId}:${lessonId}`;

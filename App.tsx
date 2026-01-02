@@ -15,7 +15,6 @@ const webClientId = Config.webClientId;
 
 export default function App() {
   const [ready, setReady] = useState(false);
-
   useEffect(() => {
     const init = async () => {
       // 🔹 Setup Google Sign-In

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect, useState } from "react";
 import {
   View,
@@ -5,50 +6,66 @@ import {
   Dimensions,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   StyleSheet,
 } from "react-native";
 import { BarChart } from "react-native-chart-kit";
-import { fetchProgressApi } from "../../services/api/progress.services";
-import { progress } from "../../models/progress";
-
-interface ProgressProps {
-  userId: string;
-}
+import { useSelector } from "react-redux";
+import { RootState } from "../../redux/store";
+import { fetchdataProgressApi } from "../../services/api/progress.services";
 
 const screenWidth = Dimensions.get("window").width;
+type LessonStatus =
+  | 'open'
+  | 'close'
+  | 'passed'
+  | 'in_progress'
+  | 'failed'
+  | 'paused';
 
-const Progress = ({ userId }: ProgressProps) => {
-  const [progressData, setProgressData] = useState<progress[] | null>(null);
-  const [loading, setLoading] = useState(true);
+const STATUS_SCORE: Record<
+  'open' | 'close' | 'passed' | 'in_progress' | 'failed' | 'paused',
+  number
+> = {
+  open: 0,
+  close: 0,
+  passed: 100,
+  in_progress: 50,
+  paused: 30,
+  failed: 10,
+};
+
+const Progresslog = ({userId}: any) => {
+  const progress = useSelector((state: RootState) => state.progress.progress);
+  const [loading, setloading] = useState(false);
   const [detailVisible, setDetailVisible] = useState(false);
-
+  const [pg, setPg] = useState<any>(null);
   useEffect(() => {
-    setLoading(true);
-    fetchProgressApi(userId)
-      .then((data) => setProgressData(data.data))
-      .catch(() => setProgressData(null))
-      .finally(() => setLoading(false));
-  }, [userId]);
+    if (!progress?._id) return;
 
-  if (loading)
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text>Đang tải tiến độ...</Text>
-      </View>
-    );
+    setloading(true);
+    fetchdataProgressApi(progress._id)
+      .then(res => {
+        setPg(res.data); // 🔥 QUAN TRỌNG
+      })
+      .finally(() => setloading(false));
+  }, [progress?._id]);
 
-  if (!progressData || progressData.length === 0) {
+  if (!pg || pg.Listlesson.length === 0) {
     return <Text>Chưa có dữ liệu tiến độ</Text>;
   }
 
-  const labels = progressData.map((item, i) => `L${i + 1}`);
-  const scores = progressData.map((item) => item.score);
+  const labels = pg.Listlesson?.map(
+    (_: any, i: any) => `${_?.lesson?.title}`
+  );
+
+  const scores = pg.Listlesson.map(
+    (item: any) => STATUS_SCORE[item.status as LessonStatus]?? 0
+  );
 
   return (
     <ScrollView>
       <Text style={styles.title}>Tiến độ học tập</Text>
+
       <BarChart
         data={{
           labels,
@@ -57,23 +74,21 @@ const Progress = ({ userId }: ProgressProps) => {
         width={screenWidth - 40}
         height={220}
         fromZero
-        yAxisLabel=""
-        yAxisSuffix=""
+        yAxisLabel=""        // ✅ thêm
+        yAxisSuffix=""       // ✅ thêm
         chartConfig={{
           backgroundColor: "#fff",
           backgroundGradientFrom: "#f5f5f5",
           backgroundGradientTo: "#e8e8e8",
           decimalPlaces: 0,
-          color: (opacity = 1) => `rgba(0, 122, 255, ${opacity})`,
-          labelColor: (opacity = 1) => `rgba(0,0,0,${opacity})`,
-          style: { borderRadius: 16 },
+          color: (o = 1) => `rgba(0,122,255,${o})`,
+          labelColor: (o = 1) => `rgba(0,0,0,${o})`,
         }}
         style={styles.chart}
       />
-
       <TouchableOpacity
         style={styles.toggleBtn}
-        onPress={() => setDetailVisible(!detailVisible)}
+        onPress={() => setDetailVisible(v => !v)}
       >
         <Text style={styles.toggleBtnText}>
           {detailVisible ? "Ẩn chi tiết" : "Xem chi tiết"}
@@ -82,17 +97,19 @@ const Progress = ({ userId }: ProgressProps) => {
 
       {detailVisible && (
         <View style={{ marginTop: 10 } as any}>
-          {progressData.map((item) => (
-            <View key={item._id} style={styles.detailCard}>
+          {pg.Listlesson.map((item: any, idx: any) => (
+            <View key={idx} style={styles.detailCard}>
+              <Text style={styles.detailText}>
+                <Text style={styles.bold}>Lesson:</Text> {item.lesson?.title}
+              </Text>
               <Text style={styles.detailText}>
                 <Text style={styles.bold}>Status:</Text> {item.status}
               </Text>
               <Text style={styles.detailText}>
-                <Text style={styles.bold}>Score:</Text> {item.score}
+                <Text style={styles.bold}>Step:</Text> {item.step}
               </Text>
               <Text style={styles.detailText}>
-                <Text style={styles.bold}>Cập nhật:</Text>{" "}
-                {new Date(item.lastAccessedAt).toLocaleString()}
+                <Text style={styles.bold}>Retake:</Text> {item.retakeCount}
               </Text>
             </View>
           ))}
@@ -102,7 +119,7 @@ const Progress = ({ userId }: ProgressProps) => {
   );
 };
 
-export default Progress;
+export default Progresslog;
 
 const styles = StyleSheet.create({
   title: {

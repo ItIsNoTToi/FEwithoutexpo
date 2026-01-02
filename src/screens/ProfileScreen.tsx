@@ -8,12 +8,12 @@ import { faArrowLeft , faBars, faCamera } from '@fortawesome/free-solid-svg-icon
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import User from '../models/user';
 import { getUser, logout_fe, SaveUser, uploadAvatar } from '../services/api/user.services';
-import Progress from './Data/progressScreen';
 import { useAuth } from '../hooks/AuthContext';
 import { SafeAreaView } from "react-native-safe-area-context";
 import UserDetail from '../models/userdetail';
 import { launchImageLibrary } from "react-native-image-picker";
 import ProfileInformation from './ProfileInformation';
+import Progresslog from './Data/progressScreen';
 
 export default function ProfileScreen({ navigation }: any) {
   const [user, setUser] = useState<User>();
@@ -53,7 +53,7 @@ export default function ProfileScreen({ navigation }: any) {
         Alert.alert("Can't logout");
       }
     } catch (e) {
-      console.log(e);
+      // console.log(e);
     }
   };
 
@@ -65,9 +65,9 @@ export default function ProfileScreen({ navigation }: any) {
       },
       (response) => {
         if (response.didCancel) {
-          console.log("User cancelled image picker");
+          // console.log("User cancelled image picker");
         } else if (response.errorCode) {
-          console.log("ImagePicker Error: ", response.errorMessage);
+          // console.log("ImagePicker Error: ", response.errorMessage);
         } else if (response.assets && response.assets.length > 0) {
           const uri = response.assets[0].uri;
           setImageUri(uri || null);
@@ -197,7 +197,7 @@ export default function ProfileScreen({ navigation }: any) {
               {
                 showProgress &&
                 <View style={styles.progressBox}>
-                  <Progress userId={user!._id} />
+                  <Progresslog userId={user?._id}/>
                 </View>
               }
 
