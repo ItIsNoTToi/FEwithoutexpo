@@ -77,11 +77,11 @@ export default function ListLesson({ navigation }: Props) {
       if (pg) {
         switch (pg.status) {
           case "passed": return "completed";
-          case "in_progress": return "active";
-          case "open": return "active";
-          case "failed": return "locked";
+          case "in_progress":
+          case "open":
+          case "failed": return "active"; // cho học lại
           case "paused": return "paused";
-          case "close": return index === 0 ? "active" : "locked"; // lesson đầu tiên mặc định active
+          case "close": return index === 0 ? "active" : "locked";
           default: return "locked";
         }
       }
