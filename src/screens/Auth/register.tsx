@@ -183,12 +183,6 @@ export default function Register({ navigation }: any) {
               Already a hero? Enter the realm →
             </Text>
           </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => navigation.navigate('RegisterPhone')}>
-            <Text style={styles.loginText}>
-              Reincarnation with phone number
-            </Text>
-          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
 

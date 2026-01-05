@@ -51,7 +51,7 @@ export function useAILesson({
       if (!mountedRef.current) return;
       setContent(lesson.readingpassage);
       setStepId(Number(d.stepId));
-      appendMessage({ from: "system", text: d.firstQuestion });
+      appendMessage({ from: "ai", text: d.firstQuestion });
       speak(d.firstQuestion);
 
     } catch (err) {
@@ -60,7 +60,7 @@ export function useAILesson({
       if (retry > 0) return startLesson(retry - 1);
 
       appendMessage({
-        from: "system",
+        from: "ai",
         text: "⚠️ Không thể khởi động bài học."
       });
     } finally {
@@ -77,7 +77,7 @@ export function useAILesson({
     const nextStepId = Number(stepId) + 1;
     setStepId(nextStepId);
     appendMessage({ from: "user", text });
-    appendMessage({ from: "system", text: "", loading: true });
+    appendMessage({ from: "ai", text: "", loading: true });
     let fullText = "";
     fetchAIStream(
       { userId, lessonId: lesson._id, userSpeechText: text, stepId: nextStepId },

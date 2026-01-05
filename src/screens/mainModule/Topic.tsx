@@ -1,5 +1,3 @@
-/* eslint-disable no-catch-shadow */
-/* eslint-disable @typescript-eslint/no-shadow */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useRef, useState } from "react";
@@ -148,11 +146,7 @@ export default function Topic({ route, navigation }: Props) {
           text: "Có",
           style: "destructive",
           onPress: async () => {
-            try {
-              await Tts.stop();
-            } catch (e) {
-              console.warn("TTS stop failed", e);
-            }
+            await Tts.stop();
             await PauseLesson();
             allowExitRef.current = true; // ✅ mở khóa
             navigation.dispatch(e.data.action);
@@ -171,17 +165,20 @@ export default function Topic({ route, navigation }: Props) {
         text: "Có",
         style: "destructive",
         onPress: async () => {
-          try {
-            await Tts.stop();
-          } catch (e) {
-            console.warn("TTS stop failed", e);
-          }
+          await Tts.stop();
           allowExitRef.current = true; // 🔥 QUAN TRỌNG
           await finishLesson();
           navigation.goBack();
         },
       },
     ]);
+  };
+
+  const handleSend = async () => {
+    if (!userInput.trim()) return;
+
+    await sendMessage(userInput.trim());
+    setUserInput(""); // ✅ CLEAR INPUT
   };
 
   if (!lesson) return <Text style={styles.centerText}>No lesson</Text>;
@@ -241,9 +238,10 @@ export default function Topic({ route, navigation }: Props) {
               style={styles.input}
               value={userInput}
               onChangeText={setUserInput}
-              onSubmitEditing={() => sendMessage(userInput)}
+              onSubmitEditing={handleSend}
+              onBlur={() => setMode("idle")} 
             />
-            <TouchableOpacity onPress={() => sendMessage(userInput)}>
+            <TouchableOpacity onPress={handleSend}>
               <Ionicons name="send" size={24} color="green" />
             </TouchableOpacity>
           </>

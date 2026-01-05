@@ -21,7 +21,7 @@ export default function Login({ navigation }: any) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleLogin = (type: 'TK' | 'GG' | 'FB' | 'OTP' | 'Apple') => {
+  const handleLogin = (type: 'TK' | 'GG' | 'FB' | 'Apple') => {
     if (type === 'TK' && !showForm) {
       setShowForm(true);
       return;
@@ -129,12 +129,6 @@ export default function Login({ navigation }: any) {
           </View>
 
           {/* FOOTER */}
-          <TouchableOpacity onPress={() => navigation.navigate('LoginWithPhone')}>
-            <Text style={styles.footerText}>
-              Login with phone number
-            </Text>
-          </TouchableOpacity>
-
           <TouchableOpacity onPress={() => navigation.navigate('Register')}>
             <Text style={styles.footerText}>
               Create a new account

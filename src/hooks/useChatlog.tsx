@@ -4,21 +4,21 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fetchChatlog } from "../services/api/chatlog.services";
 
 export type ChatMessage = { 
-  from: "user" | "system"; 
+  from: "user" | "ai";   // ✅ sửa
   text: string; 
-  loading?: boolean;  // <-- thêm
+  loading?: boolean;
 };
 
-export const storageKey = async (userId: string, lessonId: string) =>
+export const storageKey = (userId: string, lessonId: string) =>
   `chatlog:${userId}:${lessonId}`;
 
 // helper: luôn lưu cache cùng format {role, content}
 async function saveCache(userId: string, lessonId: string, msgs: ChatMessage[]) {
   await AsyncStorage.setItem(
-    await storageKey(userId, lessonId),
+    storageKey(userId, lessonId),
     JSON.stringify(
       msgs.map((m) => ({
-        role: m.from,
+        role: m.from === "user" ? "user" : "assistant", // ✅ map đúng
         text: m.text,
       }))
     )
@@ -35,35 +35,33 @@ export function useChatlog(userId?: string, lessonId?: string) {
 
       const key = storageKey(userId, lessonId);
 
-      // 1. Lấy cache
-      const cached = await AsyncStorage.getItem(await key);
-      let initial: ChatMessage[] = [];
+      // 1️⃣ Load cache trước
+      const cached = await AsyncStorage.getItem(key);
+      let cachedMsgs: ChatMessage[] = [];
+
       if (cached) {
         const raw = JSON.parse(cached);
-        initial = raw.map((m: any) => ({
-          from: m.role === "user" ? "user" : "system",
-          text: m.text ?? "",
+        cachedMsgs = raw.map((m: any) => ({
+          from: m.role === "user" ? "user" : "ai",
+          text: m.content  ?? "",
         }));
       }
 
-      // 2. Gọi API
+      // 2️⃣ Gọi API
       const res = await fetchChatlog(userId, lessonId);
-      const raw = res?.data?.history ?? [];
-      // console.log('raw', raw);
-  
-      const messages: ChatMessage[] = raw.map((m: any) => ({
-        from: m.role === "user" ? "user" : "system",
-        text: m.text ?? "",
-      }));
-
-      // 3. Lưu lại cache mới
-      if (messages.length > 0) {
-        await AsyncStorage.setItem(await key, JSON.stringify(raw));
-        return messages;
+      const rawApi = res?.data?.history;
+      console.log(rawApi);
+      if (Array.isArray(rawApi) && rawApi.length > 0) {
+        await AsyncStorage.setItem(key, JSON.stringify(rawApi));
+        return rawApi.map((m: any) => ({
+          from: m.role === "user" ? "user" : "ai",
+          text: m.content ?? "",
+        }));
       }
 
-      // Nếu API rỗng → fallback cache
-      return initial;
+      // 3️⃣ API rỗng → dùng cache
+      console.log(cachedMsgs);
+      return cachedMsgs;
     },
     enabled: !!userId && !!lessonId,
     staleTime: 1000 * 60,
@@ -90,7 +88,7 @@ export function useChatlog(userId?: string, lessonId?: string) {
 
         const newMsgs = [...old];
         const last = newMsgs[newMsgs.length - 1];
-        if (!last || last.from !== "system") return old;
+        if (!last || last.from !== "ai") return old;
 
         let newText = last.text + incoming;
 

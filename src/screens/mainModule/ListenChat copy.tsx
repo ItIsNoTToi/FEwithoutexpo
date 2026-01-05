@@ -118,7 +118,7 @@ export default function ListenChat({ route, navigation }: Props) {
         
       appendMessage({ from: "user", text: text});
       setUserInput("");
-      appendMessage({ from: "system", text: "", loading: true });
+      appendMessage({ from: "ai", text: "", loading: true });
 
       let fullText = "";
       try {
@@ -201,7 +201,7 @@ export default function ListenChat({ route, navigation }: Props) {
         setContent(d.content);
         Alert.alert("Info", d.message);
         // console.log(1);
-        appendMessage({ from: "system", text: d.firstQuestion });
+        appendMessage({ from: "ai", text: d.firstQuestion });
         speak(d.firstQuestion);
         // console.log(2);
         setLoading(false);
@@ -286,7 +286,7 @@ export default function ListenChat({ route, navigation }: Props) {
     const answer = userInput.trim();
     appendMessage({ from: "user", text: answer });
     setUserInput("");
-    appendMessage({ from: "system", text: "", loading: true });
+    appendMessage({ from: "ai", text: "", loading: true });
 
     let fullText = "";
     try {
