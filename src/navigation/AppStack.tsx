@@ -26,6 +26,17 @@ import { Speak } from '../screens/4SkillAI/Speak';
 import { Listen } from '../screens/4SkillAI/Listen';
 import { fixSentence } from '../screens/fixSentence';
 
+// game
+import GameHub from '../screens/game/GameHub';
+import MemoryGame from '../screens/game/MemoryGame';
+import BreathingGame from '../screens/game/BreathingGame';
+import TapSpeedGame from '../screens/game/TapSpeedGame';
+import AimTrainer from '../screens/game/AimTrainer';
+import BuildHouseGame from '../screens/game/BuildHouseGame';
+import BridgeBuilder from '../screens/game/BridgeBuilder';
+import PokerGame from '../screens/game/PokerGame';
+import FruitCatcher from '../screens/game/FruitCatcher';
+
 export type QuizStackParamList = {
   QuizTopic: undefined;
   QuizTest: { quizId: string;};
@@ -184,6 +195,54 @@ export default function AppNavigation() {
           title: 'Fix Sentence',
           headerShown: false
         }}
+      />
+      <Stack.Screen
+        name="GameHub"
+        component={GameHub}
+        options={{
+          title: 'GameHub',
+          headerShown: false
+        }}
+      />
+      <Stack.Screen
+        name="Memory"
+        component={MemoryGame}
+        options={{
+          title: 'Memory',
+          headerShown: false
+        }}
+      />
+      <Stack.Screen
+        name="Breathing"
+        component={BreathingGame}
+        options={{
+          title: 'Breathing',
+          headerShown: false
+        }}
+      />
+       <Stack.Screen
+        name="TapSpeed"
+        component={TapSpeedGame}
+      />
+      <Stack.Screen
+        name="Aim"
+        component={AimTrainer}
+      />
+      <Stack.Screen
+        name="BuildHouse"
+        component={BuildHouseGame}
+      />
+      <Stack.Screen
+        name="Bridge"
+        component={BridgeBuilder}
+      />
+      <Stack.Screen
+        name="Poker"
+        component={PokerGame}
+      />
+      <Stack.Screen
+        name="FruitCatcher"
+        component={FruitCatcher}
       />
     </Stack.Navigator>
   );

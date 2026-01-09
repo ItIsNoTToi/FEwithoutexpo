@@ -50,7 +50,7 @@ export function useChatlog(userId?: string, lessonId?: string) {
       // 2️⃣ Gọi API
       const res = await fetchChatlog(userId, lessonId);
       const rawApi = res?.data?.history;
-      console.log(rawApi);
+      // console.log(rawApi);
       if (Array.isArray(rawApi) && rawApi.length > 0) {
         await AsyncStorage.setItem(key, JSON.stringify(rawApi));
         return rawApi.map((m: any) => ({
@@ -60,7 +60,7 @@ export function useChatlog(userId?: string, lessonId?: string) {
       }
 
       // 3️⃣ API rỗng → dùng cache
-      console.log(cachedMsgs);
+      // console.log(cachedMsgs);
       return cachedMsgs;
     },
     enabled: !!userId && !!lessonId,

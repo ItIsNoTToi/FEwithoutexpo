@@ -58,7 +58,7 @@ export default function HomeScreen({ navigation }: any) {
             <Text style={styles.cardText}>Fix Sentence</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('FixSentence')}>
+          <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('GameHub')}>
             <Ionicons name="play" size={32} color="#78d542ff" />
             <Text style={styles.cardText}>Play game with friend</Text>
           </TouchableOpacity>

@@ -62,12 +62,13 @@ export const SaveUser = async (data: any) => {
   }
 }
 
-export const uploadAvatar = async (userId: any, formData: FormData) => {
+export const uploadAvatar = async (userId: any, url: string) => {
   try {
-    const res = await axios.post(`/api/avatar/${userId}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+    // console.log(url)
+    const res = await axios.post(`/api/avatar/update/${userId}`, {
+      url: url
     });
-    if (res.status === 200 && res.data.success) return res.data;
+    return res.data;
   } catch (error) {
     console.error("Upload avatar error:", error);
   }

@@ -10,10 +10,25 @@ const LessonStack = createNativeStackNavigator<LessonStackParamList>();
 export function LessonStackNavigator() {
   return (
     <LessonStack.Navigator screenOptions={{ headerShown: false }}>
-      <LessonStack.Screen name="ListLesson" component={ListLesson} />
-      <LessonStack.Screen name="listening" component={ListenChat} />
-      <LessonStack.Screen name="reading" component={ReadChatRPG} />
-      <LessonStack.Screen name="topic" component={Topic} />
+      <LessonStack.Screen
+        name="ListLesson"
+        component={ListLesson}
+      />
+
+      <LessonStack.Screen
+        name="reading"
+        component={ReadChatRPG}
+      />
+
+      <LessonStack.Screen
+        name="listening"
+        component={ListenChat}
+      />
+
+      <LessonStack.Screen
+        name="topic"
+        component={Topic}
+      />
     </LessonStack.Navigator>
   );
 }

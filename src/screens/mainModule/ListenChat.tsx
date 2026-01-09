@@ -24,7 +24,7 @@ import { useAILesson } from "../../hooks/useAILesson";
 import { getdataLesson } from "../../services/api/lesson.services";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 type Mode = "idle" | "record" | "keyboard";
-type Props = NativeStackScreenProps<LessonStackParamList, "reading">;
+type Props = NativeStackScreenProps<LessonStackParamList, "listening">;
 
 export default function ListenChat({ route, navigation }: Props) {
   const { type, lessonmode } = route.params;
@@ -62,7 +62,7 @@ export default function ListenChat({ route, navigation }: Props) {
   useEffect(() => {
     if (!lesson || !progress || !totalSteps) return;
     const pg = progress.Listlesson.find(
-      p => String(p.lesson) === String(lesson?._id)
+      (p: any) => String(p.lesson) === String(lesson?._id)
     );
     setIsFinished(
       pg?.status === 'passed' ||

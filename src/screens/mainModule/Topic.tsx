@@ -23,7 +23,7 @@ import { useAILesson } from "../../hooks/useAILesson";
 import { getdataLesson } from "../../services/api/lesson.services";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 type Mode = "idle" | "record" | "keyboard";
-type Props = NativeStackScreenProps<LessonStackParamList, "reading">;
+type Props = NativeStackScreenProps<LessonStackParamList, "topic">;
 
 export default function Topic({ route, navigation }: Props) {
   const { type, lessonmode } = route.params;

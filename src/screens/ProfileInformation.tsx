@@ -4,13 +4,12 @@ import { Text, TextInput, Button, StyleSheet, View, TouchableOpacity } from "rea
 import { Picker } from "@react-native-picker/picker";
 import User from "../models/user";
 
-interface ProfileInformationProp {
+export interface ProfileInformationProp {
   user: User;
   onSave?: (updatedUser: User) => void; // callback khi bấm lưu
 }
 
 const ProfileInformationForm = ({ user, onSave }: ProfileInformationProp) => {
-    const [username, setUsername] = useState(user.username);
     const [email, setEmail] = useState(user.email || "");
     const [phone, setPhone] = useState(user.Phone || "");
     const [firstName, setFirstName] = useState(user.UserDetail?.FirstName || "");
@@ -24,7 +23,6 @@ const ProfileInformationForm = ({ user, onSave }: ProfileInformationProp) => {
     const handleSave = async () => {
         const updatedUser: User = {
         ...user,
-        username,
         email,
         Phone: phone,
         UserDetail: {
@@ -45,13 +43,6 @@ const ProfileInformationForm = ({ user, onSave }: ProfileInformationProp) => {
     return (
         <View style={styles.container}>
         <Text style={styles.title}>Profile Information</Text>
-
-        <Text style={styles.text}>Username:</Text>
-        <TextInput
-            style={styles.input}
-            value={username}
-            onChangeText={setUsername}
-        />
 
         <Text style={styles.text}>Email:</Text>
         <TextInput
