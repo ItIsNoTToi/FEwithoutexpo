@@ -8,9 +8,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Props = NativeStackScreenProps<QuizStackParamList, 'QuizTest'>;
 
-export default function QuizTest({ route, navigation }: Props) {
+export default function QuizTest({ route, navigation}: Props) {
   const { quizId } = route.params;
-
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
@@ -58,12 +57,8 @@ export default function QuizTest({ route, navigation }: Props) {
       SaveHistoryQuiz(quizId, score, questions.length, percent)
         .then((data) => {
           if (data.success) {
-            navigation.navigate("Result", {
-              score,
-              total: questions.length,
-              totalscore,
-              quizId
-            });
+            setScore(data.score);
+            navigation.navigate("QuizTopic")
           }
         })
         .catch(error => console.error('Error saving quiz history:', error));

@@ -24,11 +24,13 @@ export function useResetChatlog() {
       queryKey: ["chatlog", userId, lessonId],
     });
 
-    // 3️⃣ Backend history
-    await resetChatlogApi(userId, lessonId);
+    try {
+      await resetChatlogApi(userId, lessonId);
+    } catch (err) {
+      console.warn("⚠️ Backend reset failed (ignored):", err);
+    }
 
-    // console.log("✅ Reset chatlog DONE");
+    console.log("✅ Reset chatlog DONE");
   };
-
   return { resetChatlog };
 }

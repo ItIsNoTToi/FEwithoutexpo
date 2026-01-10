@@ -111,7 +111,6 @@ export default function ListLesson({ navigation }: Props) {
             : pg.step
       }));
     }
-
     dispatch(setSelectLesson(lesson));
     setShowModal(false);
 

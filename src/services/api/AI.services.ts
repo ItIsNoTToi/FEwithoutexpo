@@ -85,10 +85,12 @@ export const EndLessonAI = async (userId: any, lessonId: any) => {
 export const PauseLessonAI = async (userId: any, lessonId: any) => {
   try {
       // console.log(userId, lessonId);
+      console.log(3)
       const response = await axiosInstance.post('/api/ai/pause',{
           userId: userId, 
           lessonId: lessonId 
       })   
+      console.log(4)
       return response.data;
     } catch (error: any) {
         throw Error (error.message);

@@ -29,9 +29,9 @@ export default function Topic({ route, navigation }: Props) {
   const { type, lessonmode } = route.params;
   const userId = useSelector((s: RootState) => s.user._id);
   const lesson = useSelector((s: RootState) => s.lesson.Lesson);
-  const {messages, loading, sending, lessonEnded, content, startLesson, PauseLesson, sendMessage, finishLesson } = useAILesson({userId, lesson, type});
+  const {messages, loading, sending, lessonEnded, startLesson, PauseLesson, sendMessage, finishLesson } = useAILesson({userId, lesson, type});
   const [userInput, setUserInput] = useState("");
-  const [contentVisible, setContentVisible] = useState(true);
+  const [contentVisible, setContentVisible] = useState(false);
   const [mode, setMode] = useState<Mode>("idle");
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const isMounted = useRef(true);
@@ -41,6 +41,8 @@ export default function Topic({ route, navigation }: Props) {
   const [totalSteps, settotalstep] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
   const allowExitRef = useRef(false);
+  const [content, setContent] = useState("");
+  const isRecordingRef = useRef(false);
   useEffect(() => {
     (async () => {
       const keys = await AsyncStorage.getAllKeys();
@@ -50,10 +52,17 @@ export default function Topic({ route, navigation }: Props) {
   }, []);
 
   useEffect(() => {
+    if (!flatRef.current) return;
+
+    flatRef.current.scrollToEnd({ animated: true });
+  }, [messages]);
+
+  useEffect(() => {
     getdataLesson(lesson?._id)
     .then(res => {
       if (res.data) {
-        settotalstep(res?.data?.steps?.length);
+        settotalstep(res?.data[0]?.steps?.length);
+        setContent(res?.data[0]?.readingpassage);
       }
     })
   }, [lesson]);
@@ -70,24 +79,25 @@ export default function Topic({ route, navigation }: Props) {
     // console.log(totalSteps);
   }, [lesson, progress, totalSteps]);
 
-  switch (lessonmode) {
-    case 'new':
-      startLesson();
-      break;
+  const hasResetRef = useRef(false);
 
-    case 'replay':
-      resetChatlog(String(userId), String(lesson?._id));
-      startLesson();
-      break;
+  useEffect(() => {
+    if (!lessonmode || !userId || !lesson?._id) return;
 
-    case 'continue':
-      if (isFinished) {
-        startLesson();
-      } else {
-        // loadChatlog();
-      }
-      break;
-  }
+    if (lessonmode === 'replay' && !hasResetRef.current) {
+      hasResetRef.current = true;
+      resetChatlog(String(userId), String(lesson._id));
+      startLesson();
+    }
+
+    if (lessonmode === 'new') {
+      startLesson();
+    }
+
+    if (lessonmode === 'continue') {
+      if (isFinished) startLesson();
+    }
+  }, [lessonmode, userId, lesson?._id, isFinished]);
   
   /* ---------- animation ---------- */
   useEffect(() => {
@@ -146,8 +156,10 @@ export default function Topic({ route, navigation }: Props) {
           text: "Có",
           style: "destructive",
           onPress: async () => {
-            await Tts.stop();
+            Tts.stop();
+            // console.log(1)
             await PauseLesson();
+            // console.log(6)
             allowExitRef.current = true; // ✅ mở khóa
             navigation.dispatch(e.data.action);
           },
@@ -165,7 +177,7 @@ export default function Topic({ route, navigation }: Props) {
         text: "Có",
         style: "destructive",
         onPress: async () => {
-          await Tts.stop();
+          Tts.stop();
           allowExitRef.current = true; // 🔥 QUAN TRỌNG
           await finishLesson();
           navigation.goBack();
@@ -219,6 +231,9 @@ export default function Topic({ route, navigation }: Props) {
               : <Text style={styles.messageText}>{item.text}</Text>}
           </View>
         )}
+        onContentSizeChange={() => {
+          flatRef.current?.scrollToEnd({ animated: true });
+        }}
       />
 
       <View style={styles.controls}>
@@ -227,7 +242,7 @@ export default function Topic({ route, navigation }: Props) {
             <TouchableOpacity onPress={() => setMode("keyboard")}>
               <Ionicons name="keypad-outline" size={28} color="#fff" />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => { setMode("record"); Voice.start("en-US"); Tts.stop() }}>
+            <TouchableOpacity onPress={() => { setMode("record"); Voice.start("en-US"); Tts.stop(); }}>
               <Ionicons name="mic-outline" size={28} color="red" />
             </TouchableOpacity>
           </>

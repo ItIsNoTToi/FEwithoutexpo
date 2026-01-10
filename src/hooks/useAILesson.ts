@@ -26,7 +26,6 @@ export function useAILesson({
   const [sending, setSending] = useState(false);
   const [lessonEnded, setLessonEnded] = useState(false);
   const dispatch = useDispatch();
-  const [content, setContent] = useState("");
   const [stepId, setStepId] = useState(0);
   const startedRef = useRef(false);
   const sendingRef = useRef(false);
@@ -49,7 +48,6 @@ export function useAILesson({
     try {
       const d: any = await startLessonAI(userId, lesson._id, type);
       if (!mountedRef.current) return;
-      setContent(lesson.readingpassage);
       setStepId(Number(d.stepId));
       appendMessage({ from: "ai", text: d.firstQuestion });
       speak(d.firstQuestion);
@@ -119,7 +117,6 @@ export function useAILesson({
     loading,
     sending,
     lessonEnded,
-    content,
     startLesson,
     PauseLesson,
     sendMessage,

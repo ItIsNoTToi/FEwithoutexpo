@@ -17,9 +17,6 @@ import { IconProp } from "@fortawesome/fontawesome-svg-core";
 import { useNavigation } from "@react-navigation/native";
 import LinearGradient from "react-native-linear-gradient";
 
-// Simple in-memory cache for titles
-const titleCache: { [key: string]: string } = {};
-
 export const Write = () => {
   const navigation = useNavigation();
   const [title, setTitle] = useState("");
@@ -33,16 +30,9 @@ export const Write = () => {
   // Fetch AI-assigned title
   const fetchTitle = async () => {
     setLoadingTitle(true);
-    const cacheKey = "randomTitle_default";
-    if (titleCache[cacheKey]) {
-      setTitle(titleCache[cacheKey]);
-      setLoadingTitle(false);
-      return;
-    }
     try {
       const data = await getRandomTitle();
-      const newTitle = data.title || "Default Title";
-      titleCache[cacheKey] = newTitle;
+      const newTitle = data?.title || "Default Title";
       setTitle(newTitle);
     } catch (err) {
       console.error("Failed to get random title:", err);
@@ -51,6 +41,7 @@ export const Write = () => {
       setLoadingTitle(false);
     }
   };
+
 
   const handleSubmit = async () => {
     if (!text.trim()) return Alert.alert("Warning", "Please enter your writing.");
@@ -212,6 +203,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(157,78,221,0.5)",
+    paddingBottom: 20,
   },
   feedbackTitle: { fontWeight: "bold", marginBottom: 6, color: "#fff" },
   feedbackText: { marginBottom: 6, color: "#ddd" },

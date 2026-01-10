@@ -40,7 +40,7 @@ import FruitCatcher from '../screens/game/FruitCatcher';
 export type QuizStackParamList = {
   QuizTopic: undefined;
   QuizTest: { quizId: string;};
-  Result: { score: number; total: number; totalscore: number; quizId: string; };
+  Result: undefined;
 }
 
 export type ReadStackParamList = {

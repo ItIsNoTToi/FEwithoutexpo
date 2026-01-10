@@ -76,6 +76,7 @@ export const Speak = () => {
   const fetchPoint = async (original: string, student: string) => {
     try {
       const data: any = await FetchRateSpeak(original, student);
+      // console.log(data.score);
       setScore(data.score);
       setFeedback(data.feedback);
     } catch (e: any) {

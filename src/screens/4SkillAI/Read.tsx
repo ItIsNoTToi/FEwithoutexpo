@@ -51,7 +51,7 @@ export const Read = () => {
 const ReadDetail = ({ lesson }: { lesson: Lesson }) => {
   return (
     <View style={styles.detailBox}>
-      <Text style={styles.detailText}>{lesson.content}</Text>
+      <Text style={styles.detailText}>{lesson.readingpassage}</Text>
     </View>
   );
 };

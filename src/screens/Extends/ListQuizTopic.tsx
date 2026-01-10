@@ -23,6 +23,13 @@ const ListQuizTopic = ({ navigation }: Props) => {
       >
         <Text style={styles.homeText}>🏠 Home</Text>
       </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.homeButton}
+        onPress={() => navigation.navigate("Result")}
+      >
+        <Text style={styles.homeText}>History Test</Text>
+      </TouchableOpacity>
+       
 
       <Text style={styles.header}>📘 Quiz Topics</Text>
 

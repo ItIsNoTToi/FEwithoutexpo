@@ -58,4 +58,31 @@ export const SaveHistoryQuiz = async (
   }
 };
 
+export const getHistoryQuiz = async (
+  userId: string,
+) => {
+  try {
+    const token = await AsyncStorage.getItem("authToken");
+    if (!token) {
+      throw new Error("No token found");
+    }
+
+    const response = await axiosInstance.get(
+      `/api/quiz/get/${userId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error("Error saving quiz history:", error);
+    throw error;
+  }
+};
+
+
+
 
